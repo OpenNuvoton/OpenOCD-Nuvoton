@@ -122,6 +122,7 @@ endif
 if HLADAPTER
 DRIVERFILES += stlink_usb.c
 DRIVERFILES += ti_icdi_usb.c
+DRIVERFILES += nulink_usb.c
 endif
 if OSBDM
 DRIVERFILES += osbdm.c

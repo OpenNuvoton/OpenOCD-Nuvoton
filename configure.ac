@@ -204,6 +204,7 @@ m4_define([USB1_ADAPTERS],
 	[[jlink], [Segger J-Link JTAG Programmer], [JLINK]],
 	[[stlink], [ST-Link JTAG Programmer], [HLADAPTER_STLINK]],
 	[[ti_icdi], [TI ICDI JTAG Programmer], [HLADAPTER_ICDI]],
+	[[nulink], [Nu-Link Programmer], [HLADAPTER_NULINK]],
 	[[ulink], [Keil ULINK JTAG Programmer], [ULINK]],
 	[[usb_blaster_2], [Altera USB-Blaster II Compatible], [USB_BLASTER_2]],
 	[[vsllink], [Versaloon-Link JTAG Programmer], [VSLLINK]]])
