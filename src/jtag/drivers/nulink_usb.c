@@ -430,7 +430,7 @@ static int nulink_usb_reset(void *handle)
 	h_u32_to_le(h->cmdbuf + h->cmdidx, CMD_MCU_RESET);
 	h->cmdidx += 4;
 	/* set reset type */
-	h_u32_to_le(h->cmdbuf + h->cmdidx, RESET_AUTO);
+	h_u32_to_le(h->cmdbuf + h->cmdidx, RESET_HW);
 	h->cmdidx += 4;
 	/* set connect type */
 	h_u32_to_le(h->cmdbuf + h->cmdidx, CONNECT_NORMAL);
@@ -1210,7 +1210,7 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 		err = jtag_libusb_detach_kernel_driver(h->fd, 0);
 		if (err != ERROR_OK) {
 			LOG_ERROR("detach kernel driver failed(%d)", err);
-			goto error_open;
+			//goto error_open;
 		}
 		else {
 			LOG_DEBUG("jtag_libusb_detach_kernel_driver succeeded");
