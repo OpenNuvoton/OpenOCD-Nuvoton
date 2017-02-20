@@ -127,6 +127,9 @@ struct arm {
 	/** Flag reporting armv6m based core. */
 	bool is_armv6m;
 
+	/** Flag reporting armv8m based core. */
+	bool is_armv8m;
+
 	/** Flag reporting whether semihosting is active. */
 	bool is_semihosting;
 

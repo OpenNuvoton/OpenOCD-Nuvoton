@@ -134,6 +134,12 @@
 #define FPCR_REPLACE_BKPT_HIGH  (2 << 30)
 #define FPCR_REPLACE_BKPT_BOTH  (3 << 30)
 
+/* CPUID part number */
+#define V6M_CPUID_PARTNO     0xC20
+#define V7M_CPUID_PARTNO     0xC24
+#define V8MBL_CPUID_PARTNO   0xD20
+#define V8MML_CPUID_PARTNO   0xD21
+
 struct cortex_m_fp_comparator {
 	int used;
 	int type;

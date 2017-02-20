@@ -430,7 +430,7 @@ static int nulink_usb_reset(void *handle)
 	h_u32_to_le(h->cmdbuf + h->cmdidx, CMD_MCU_RESET);
 	h->cmdidx += 4;
 	/* set reset type */
-	h_u32_to_le(h->cmdbuf + h->cmdidx, RESET_HW);
+	h_u32_to_le(h->cmdbuf + h->cmdidx, RESET_AUTO);
 	h->cmdidx += 4;
 	/* set connect type */
 	h_u32_to_le(h->cmdbuf + h->cmdidx, CONNECT_NORMAL);
@@ -1267,29 +1267,37 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 
 	/* SWD clock rate : 1MHz */
 	nulink_speed(h, 1000, false);
-
-	/* get cpuid, so we can determine the max page size
-	 * start with a safe default */
-	h->max_mem_packet = (1 << 10);
-
-	//uint8_t buffer[4];
-	//err = nulink_usb_read_mem32(h, CPUID, 4, buffer);
-	//if (err == ERROR_OK) {
-	//	uint32_t cpuid = le_to_h_u32(buffer);
-	//	int i = (cpuid >> 4) & 0xf;
-	//	if (i == 4 || i == 3) {
-	//		/* Cortex-M3/M4 has 4096 bytes autoincrement range */
-	//		h->max_mem_packet = (1 << 12);
-	//	}
-	//}
-
-	//LOG_DEBUG("max page size: %" PRIu32, h->max_mem_packet);
-
+	
 	LOG_DEBUG("nulink_usb_open: we manually perform nulink_usb_reset");
 	nulink_usb_write_debug_reg(h, 0xe000edf0, 0xa05f0001);
-	nulink_usb_write_debug_reg(h, 0xe000edfc, 0x01000001);
-	nulink_usb_write_debug_reg(h, 0xe000ed0c, 0x05fa0004);
+	//nulink_usb_write_debug_reg(h, 0xe000edfc, 0x01000001);
+	//nulink_usb_write_debug_reg(h, 0xe000ed0c, 0x05fa0004);
 	nulink_usb_reset(h);
+
+	/* get cpuid, so we can determine the max page size
+	* start with a safe default for Cortex-M0*/
+	h->max_mem_packet = (1 << 10);
+
+	uint8_t buffer[4];
+	err = nulink_usb_read_mem32(h, CPUID, 4, buffer);
+	if (err == ERROR_OK) {
+		uint32_t cpuid = le_to_h_u32(buffer);
+		int i;
+
+		if (((cpuid >> 4) & 0xfff) == V8MBL_CPUID_PARTNO || ((cpuid >> 4) & 0xfff) == V8MML_CPUID_PARTNO) {
+			i = 23;
+		}
+		else {
+			i = (cpuid >> 4) & 0xf;
+		}
+
+		if (i == 4 || i == 3 || i == 23) {
+			/* Cortex-M3/M4/M23 has 4096 bytes autoincrement range */
+			h->max_mem_packet = (1 << 12);
+		}
+	}
+
+	LOG_DEBUG("max page size: %" PRIu32, h->max_mem_packet);
 
 	*fd = h;
 

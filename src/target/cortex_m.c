@@ -1117,6 +1117,7 @@ int cortex_m_set_breakpoint(struct target *target, struct breakpoint *breakpoint
 	int retval;
 	int fp_num = 0;
 	struct cortex_m_common *cortex_m = target_to_cm(target);
+	struct armv7m_common *armv7m = target_to_armv7m(target);
 	struct cortex_m_fp_comparator *comparator_list = cortex_m->fp_comparator_list;
 
 	if (breakpoint->set) {
@@ -1137,14 +1138,18 @@ int cortex_m_set_breakpoint(struct target *target, struct breakpoint *breakpoint
 		}
 		breakpoint->set = fp_num + 1;
 		fpcr_value = breakpoint->address | 1;
-		if (cortex_m->fp_rev == 0) {
-			uint32_t hilo;
-			hilo = (breakpoint->address & 0x2) ? FPCR_REPLACE_BKPT_HIGH : FPCR_REPLACE_BKPT_LOW;
-			fpcr_value = (fpcr_value & 0x1FFFFFFC) | hilo | 1;
-		} else if (cortex_m->fp_rev > 1) {
-			LOG_ERROR("Unhandled Cortex-M Flash Patch Breakpoint architecture revision");
-			return ERROR_FAIL;
+		if (!armv7m->arm.is_armv8m) {
+			if (cortex_m->fp_rev == 0) {
+				uint32_t hilo;
+				hilo = (breakpoint->address & 0x2) ? FPCR_REPLACE_BKPT_HIGH : FPCR_REPLACE_BKPT_LOW;
+				fpcr_value = (fpcr_value & 0x1FFFFFFC) | hilo | 1;
+			}
+			else if (cortex_m->fp_rev > 1) {
+				LOG_ERROR("Unhandled Cortex-M Flash Patch Breakpoint architecture revision");
+				return ERROR_FAIL;
+			}
 		}
+
 		comparator_list[fp_num].used = 1;
 		comparator_list[fp_num].fpcr_value = fpcr_value;
 		target_write_u32(target, comparator_list[fp_num].fpcr_address,
@@ -1309,6 +1314,7 @@ int cortex_m_set_watchpoint(struct target *target, struct watchpoint *watchpoint
 	int dwt_num = 0;
 	uint32_t mask, temp;
 	struct cortex_m_common *cortex_m = target_to_cm(target);
+	struct armv7m_common *armv7m = target_to_armv7m(target);
 
 	/* watchpoint params were validated earlier */
 	mask = 0;
@@ -1341,11 +1347,12 @@ int cortex_m_set_watchpoint(struct target *target, struct watchpoint *watchpoint
 	target_write_u32(target, comparator->dwt_comparator_address + 0,
 		comparator->comp);
 
-	comparator->mask = mask;
-	target_write_u32(target, comparator->dwt_comparator_address + 4,
-		comparator->mask);
+	if (!armv7m->arm.is_armv8m) {
+		comparator->mask = mask;
+		target_write_u32(target, comparator->dwt_comparator_address + 4,
+			comparator->mask);
 
-	switch (watchpoint->rw) {
+		switch (watchpoint->rw) {
 		case WPT_READ:
 			comparator->function = 5;
 			break;
@@ -1355,15 +1362,52 @@ int cortex_m_set_watchpoint(struct target *target, struct watchpoint *watchpoint
 		case WPT_ACCESS:
 			comparator->function = 7;
 			break;
-	}
-	target_write_u32(target, comparator->dwt_comparator_address + 8,
-		comparator->function);
+		}
+		target_write_u32(target, comparator->dwt_comparator_address + 8,
+			comparator->function);
 
-	LOG_DEBUG("Watchpoint (ID %d) DWT%d 0x%08x 0x%x 0x%05x",
-		watchpoint->unique_id, dwt_num,
-		(unsigned) comparator->comp,
-		(unsigned) comparator->mask,
-		(unsigned) comparator->function);
+		LOG_DEBUG("Watchpoint (ID %d) DWT%d 0x%08x 0x%x 0x%05x",
+			watchpoint->unique_id, dwt_num,
+			(unsigned)comparator->comp,
+			(unsigned)comparator->mask,
+			(unsigned)comparator->function);
+	}
+	else {
+		switch (watchpoint->length) {
+		case 1:
+			mask = 0;
+			break;
+		case 2:
+			mask = 1;
+			break;
+		case 4:
+			mask = 2;
+			break;
+		}
+		comparator->mask = mask;
+
+		switch (watchpoint->rw) {
+		case WPT_READ:
+			comparator->function = 5;
+			break;
+		case WPT_WRITE:
+			comparator->function = 6;
+			break;
+		case WPT_ACCESS:
+			comparator->function = 4;
+			break;
+		}
+
+		comparator->function = comparator->function + (mask << 10) + (1 << 4);
+		target_write_u32(target, comparator->dwt_comparator_address + 8,
+			comparator->function);
+
+		LOG_DEBUG("Watchpoint (ID %d) DWT%d 0x%08x 0x%08x",
+			watchpoint->unique_id, dwt_num,
+			(unsigned)comparator->comp,
+			(unsigned)comparator->function);
+	}
+
 	return ERROR_OK;
 }
 
@@ -1781,10 +1825,11 @@ static void cortex_m_dwt_addreg(struct target *t, struct reg *r, struct dwt_reg 
 
 void cortex_m_dwt_setup(struct cortex_m_common *cm, struct target *target)
 {
-	uint32_t dwtcr;
+	uint32_t dwtcr, dwtfun;
 	struct reg_cache *cache;
 	struct cortex_m_dwt_comparator *comparator;
 	int reg, i;
+	bool bDisplayDWT_FUNCTION = false;
 
 	target_read_u32(target, DWT_CTRL, &dwtcr);
 	if (!dwtcr) {
@@ -1832,6 +1877,13 @@ fail1:
 
 		/* make sure we clear any watchpoints enabled on the target */
 		target_write_u32(target, comparator->dwt_comparator_address + 8, 0);
+
+		if (bDisplayDWT_FUNCTION) {
+			target_read_u32(target, comparator->dwt_comparator_address + 8, &dwtfun);
+			LOG_DEBUG("DWT_FUNCTION%d: 0x%" PRIx32 "",
+				i,
+				dwtfun);
+		}
 	}
 
 	*register_get_last_cache_p(&target->reg_cache) = cache;
@@ -1922,7 +1974,12 @@ int cortex_m_examine(struct target *target)
 			return retval;
 
 		/* Get CPU Type */
-		i = (cpuid >> 4) & 0xf;
+		if (((cpuid >> 4) & 0xfff) == V8MBL_CPUID_PARTNO || ((cpuid >> 4) & 0xfff) == V8MML_CPUID_PARTNO) {
+			i = 23;
+		}
+		else {
+			i = (cpuid >> 4) & 0xf;
+		}
 
 		LOG_DEBUG("Cortex-M%d r%" PRId8 "p%" PRId8 " processor detected",
 				i, (uint8_t)((cpuid >> 20) & 0xf), (uint8_t)((cpuid >> 0) & 0xf));
@@ -1959,6 +2016,8 @@ int cortex_m_examine(struct target *target)
 		} else if (i == 0) {
 			/* Cortex-M0 does not support unaligned memory access */
 			armv7m->arm.is_armv6m = true;
+		} else if (i == 23) {
+			armv7m->arm.is_armv8m = true;
 		}
 
 		if (armv7m->fp_feature == FP_NONE &&

@@ -115,12 +115,6 @@
 /* flash MAX banks */
 #define NUMICRO_MAX_FLASH_BANKS 4
 
-/* CPUID part number */
-#define V6M_CPUID_PARTNO     0xC20
-#define V7M_CPUID_PARTNO     0xC24
-#define V8MBL_CPUID_PARTNO   0xD20
-#define V8MML_CPUID_PARTNO   0xD21
-
 /* flash bank structs */
 struct numicro_flash_bank_type {
 	uint32_t base;
@@ -540,6 +534,9 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"NUC472VG8AE", 0x00047212, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 16*1024, 16)},
 	{"NUC472VI8AE", 0x00047210, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 16*1024, 16)},
 
+	/* M2351 */
+	{ "M2351XXXXX", 0xFFFFFFFF, NUMICRO_BANKS_GENERAL(512 * 1024, 0 * 1024, 4 * 1024, 4) },
+
 	{"UNKNOWN"    , 0x00000000, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 16*1024, 8)},
 };
 
@@ -559,15 +556,19 @@ static int numicro_get_arm_arch(struct target *target)
 {
 	struct armv7m_common *armv7m = target_to_armv7m(target);
 
-	if (!armv7m->arm.is_armv6m) {
-		LOG_DEBUG("NuMicro arm architecture: armv7m\n");
-		m_pageSize = NUMICRO_PAGESIZE * 4;
-		m_addressMinusOffset = 0x10000000;
-	}
-	else {
-		LOG_DEBUG("NuMicro arm architecture: armv6m\n");
+	if (armv7m->arm.is_armv6m) {
+		LOG_DEBUG("NuMicro arm architecture: armv6m");
 		m_pageSize = NUMICRO_PAGESIZE;
 		m_addressMinusOffset = 0x0;
+	}
+	else if (armv7m->arm.is_armv8m) {
+		LOG_DEBUG("NuMicro arm architecture: armv8m");
+		m_pageSize = NUMICRO_PAGESIZE * 4;
+		m_addressMinusOffset = 0x10000000;
+	}	else {
+		LOG_DEBUG("NuMicro arm architecture: armv7m");
+		m_pageSize = NUMICRO_PAGESIZE * 4;
+		m_addressMinusOffset = 0x10000000;
 	}
 
 	return ERROR_OK;
