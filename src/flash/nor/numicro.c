@@ -71,6 +71,8 @@
 #define NUMICRO_CONFIG0         0x5000C000
 #define NUMICRO_CONFIG1         0x5000C004
 
+#define NUMICRO_TZ_MASK         0xEFFFFFFF
+
 /* Command register bits */
 #define PWRCON_OSC22M         (1 << 2)
 #define PWRCON_XTL12M         (1 << 0)
@@ -535,7 +537,9 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"NUC472VI8AE", 0x00047210, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 16*1024, 16)},
 
 	/* M2351 */
-	{ "M2351XXXXX", 0xFFFFFFFF, NUMICRO_BANKS_GENERAL(512 * 1024, 0 * 1024, 4 * 1024, 4) },
+	{ "M2351XXXXX", 0xFFFFFFFF, NUMICRO_BANKS_GENERAL(0x10080000, 0 * 1024, 4 * 1024, 4) },
+	{ "M2351XXXX2", 0x10008234, NUMICRO_BANKS_GENERAL(0x10080000, 0 * 1024, 4 * 1024, 4) },
+	{ "M2351XXXX1", 0x00082340, NUMICRO_BANKS_GENERAL(0x10080000, 0 * 1024, 4 * 1024, 4) },
 
 	{"UNKNOWN"    , 0x00000000, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 16*1024, 8)},
 };
@@ -916,7 +920,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			break;
 
 		buf_set_u32(reg_params[0].value, 0, 32, source->address);
-		buf_set_u32(reg_params[1].value, 0, 32, address);
+		buf_set_u32(reg_params[1].value, 0, 32, address & NUMICRO_TZ_MASK);
 		buf_set_u32(reg_params[2].value, 0, 32, thisrun_count);
 
 		retval = target_run_algorithm(target, 0, NULL, 3, reg_params,
@@ -1013,7 +1017,7 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 
 	for (i = first; i <= last; i++) {
 		LOG_DEBUG("erasing sector %d at address 0x%" PRIx32 "", i, bank->base + bank->sectors[i].offset);
-		retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, bank->base + bank->sectors[i].offset);
+		retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, (bank->base + bank->sectors[i].offset)  & NUMICRO_TZ_MASK);
 		if (retval != ERROR_OK)
 			return retval;
 		retval = target_write_u32(target, NUMICRO_FLASH_ISPTRG - m_addressMinusOffset, ISPTRG_ISPGO); /* This is the only bit available */
@@ -1051,7 +1055,7 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 		}
 	}
 
-	/* done, */
+	/* done */
 	LOG_DEBUG("Erase done.");
 
 	return ERROR_OK;
@@ -1116,7 +1120,7 @@ static int numicro_write(struct flash_bank *bank, const uint8_t *buffer,
 			uint8_t padding[4] = {0xff, 0xff, 0xff, 0xff};
 			memcpy(padding, buffer + i, MIN(4, count-i));
 
-			retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, bank->base + offset + i);
+			retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, (bank->base + offset + i) & NUMICRO_TZ_MASK);
 			if (retval != ERROR_OK)
 				return retval;
 			retval = target_write_memory(target, NUMICRO_FLASH_ISPDAT - m_addressMinusOffset, 4, 1, padding);

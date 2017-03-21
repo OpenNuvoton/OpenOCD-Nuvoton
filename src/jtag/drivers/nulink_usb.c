@@ -861,8 +861,8 @@ static int nulink_usb_read_mem32(void *handle, uint32_t addr, uint16_t len,
 
 		/* fill in the output buffer */
 		for (i = 0; i < count; i++) {
-			memcpy(buffer + 4 * i, h->databuf + 4 * (2 * i + 1), 4);
-
+			memcpy(buffer, h->databuf + 4 * (2 * i + 1), 4);
+			buffer += 4;
 			//LOG_DEBUG("NULINK read_ram(0x%08x): 0x%08x",
 			//	addr,
 			//	le_to_h_u32(h->databuf + 4 * (2 * i + 1)));
@@ -1209,7 +1209,7 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 
 		err = jtag_libusb_detach_kernel_driver(h->fd, 0);
 		if (err != ERROR_OK) {
-			LOG_ERROR("detach kernel driver failed(%d)", err);
+			LOG_WARNING("detach kernel driver failed(%d)", err);
 			//goto error_open;
 		}
 		else {
