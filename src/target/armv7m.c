@@ -8,7 +8,7 @@
  *   Copyright (C) 2008 by Spencer Oliver                                  *
  *   spen@spen-soft.co.uk                                                  *
  *                                                                         *
- *   Copyright (C) 2007,2008 Øyvind Harboe                                 *
+ *   Copyright (C) 2007,2008 ?yvind Harboe                                 *
  *   oyvind.harboe@zylin.com                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -572,7 +572,7 @@ struct reg_cache *armv7m_build_reg_cache(struct target *target)
 	int i;
 
 	/* Build the process context cache */
-	cache->name = "arm v7m registers";
+	cache->name = "arm registers";
 	cache->next = NULL;
 	cache->reg_list = reg_list;
 	cache->num_regs = num_regs;

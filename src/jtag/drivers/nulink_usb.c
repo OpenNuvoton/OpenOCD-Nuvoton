@@ -991,7 +991,7 @@ static int nulink_usb_read_mem(void *handle, uint32_t addr, uint32_t size,
 			 * alignment and any page boundaries. We already do this as part of the
 			 * adi_v5 implementation, but the nulink is a hla adapter and so this
 			 * needs implementiong manually.
-			 * currently this only affects jtag mode, according to ST they do single
+			 * currently this only affects jtag mode, they do single
 			 * access in SWD mode - but this may change and so we do it for both modes */
 
 			/* we first need to check for any unaligned bytes */
@@ -1052,7 +1052,7 @@ static int nulink_usb_write_mem(void *handle, uint32_t addr, uint32_t size,
 			 * alignment and any page boundaries. We already do this as part of the
 			 * adi_v5 implementation, but the nulink is a hla adapter and so this
 			 * needs implementiong manually.
-			 * currently this only affects jtag mode, according to ST they do single
+			 * currently this only affects jtag mode, do single
 			 * access in SWD mode - but this may change and so we do it for both modes */
 
 			/* we first need to check for any unaligned bytes */
@@ -1209,7 +1209,7 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 
 		err = jtag_libusb_detach_kernel_driver(h->fd, 0);
 		if (err != ERROR_OK) {
-			LOG_WARNING("detach kernel driver failed(%d)", err);
+			LOG_DEBUG("detach kernel driver failed(%d)", err);
 			//goto error_open;
 		}
 		else {

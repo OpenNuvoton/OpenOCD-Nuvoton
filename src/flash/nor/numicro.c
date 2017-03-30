@@ -536,10 +536,60 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"NUC472VG8AE", 0x00047212, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 16*1024, 16)},
 	{"NUC472VI8AE", 0x00047210, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 16*1024, 16)},
 
+	/* M480 */
+	{ "M481KIDAE", 0x00D48140, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M481KGAAE", 0x00D48141, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M481SIDAE", 0x00D48110, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M481SGAAE", 0x00D48111, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M481LIDAE", 0x00D48100, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M481LGAAE", 0x00D48101, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M481ZIDAE", 0x00D481E0, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M481ZGAAE", 0x00D481E1, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M482JIDAE", 0x00D48250, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M482JGAAE", 0x00D48251, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M482KIDAE", 0x00D48240, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M482KGAAE", 0x00D48241, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M482VIDAE", 0x00D48230, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M482VGAAE", 0x00D48231, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M482SIDAE", 0x00D48210, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M482SGAAE", 0x00D48211, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M482LIDAE", 0x00D48200, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M482LGAAE", 0x00D48201, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M483JIDAE", 0x00D48350, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M483JGAAE", 0x00D48351, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M483KIDAE", 0x00D48340, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M483KGAAE", 0x00D48341, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M483VIDAE", 0x00D48330, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M483VGAAE", 0x00D48331, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M483SIDAE", 0x00D48310, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M483SGAAE", 0x00D48311, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M483LIDAE", 0x00D48300, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M483LGAAE", 0x00D48301, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M484KIDAE", 0x00D48440, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M484KGAAE", 0x00D48441, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M484SIDAE", 0x00D48410, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M484SGAAE", 0x00D48411, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M485JIDAE", 0x00D48550, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M485JGAAE", 0x00D48551, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M485KIDAE", 0x00D48540, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M485KGAAE", 0x00D48541, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M485VIDAE", 0x00D48530, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M485VGAAE", 0x00D48531, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M485OIDAE", 0x00D48580, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M485OGAAE", 0x00D48581, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M485SIDAE", 0x00D48510, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M485SGAAE", 0x00D48511, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M487JIDAE", 0x00D48750, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M487JGAAE", 0x00D48751, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M487KIDAE", 0x00D48740, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M487KGAAE", 0x00D48741, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{ "M487SIDAE", 0x00D48710, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
+	{ "M487SGAAE", 0x00D48711, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+
 	/* M2351 */
-	{ "M2351XXXXX", 0xFFFFFFFF, NUMICRO_BANKS_GENERAL(0x10080000, 0 * 1024, 4 * 1024, 4) },
-	{ "M2351XXXX2", 0x10008234, NUMICRO_BANKS_GENERAL(0x10080000, 0 * 1024, 4 * 1024, 4) },
-	{ "M2351XXXX1", 0x00082340, NUMICRO_BANKS_GENERAL(0x10080000, 0 * 1024, 4 * 1024, 4) },
+	{ "M2351XXXXX", 0xFFFFFFFF, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 4) },
+	{ "M2351XXXX2", 0x10008234, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 4) },
+	{ "M2351XXXX1", 0x00082340, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 4) },
 
 	{"UNKNOWN"    , 0x00000000, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 16*1024, 8)},
 };
@@ -562,16 +612,16 @@ static int numicro_get_arm_arch(struct target *target)
 
 	if (armv7m->arm.is_armv6m) {
 		LOG_DEBUG("NuMicro arm architecture: armv6m");
-		m_pageSize = NUMICRO_PAGESIZE;
+		//m_pageSize = NUMICRO_PAGESIZE;
 		m_addressMinusOffset = 0x0;
 	}
 	else if (armv7m->arm.is_armv8m) {
 		LOG_DEBUG("NuMicro arm architecture: armv8m");
-		m_pageSize = NUMICRO_PAGESIZE * 4;
+		//m_pageSize = NUMICRO_PAGESIZE * 4;
 		m_addressMinusOffset = 0x10000000;
 	}	else {
 		LOG_DEBUG("NuMicro arm architecture: armv7m");
-		m_pageSize = NUMICRO_PAGESIZE * 4;
+		//m_pageSize = NUMICRO_PAGESIZE * 4;
 		m_addressMinusOffset = 0x10000000;
 	}
 
@@ -992,7 +1042,6 @@ static int numicro_protect_check(struct flash_bank *bank)
 	return ERROR_OK;
 }
 
-
 static int numicro_erase(struct flash_bank *bank, int first, int last)
 {
 	struct target *target = bank->target;
@@ -1191,7 +1240,11 @@ static int numicro_get_cpu_type(struct target *target, const struct numicro_cpu_
 			return ERROR_OK;
 		}
 	}
-
+	
+	LOG_WARNING("NuMicro flash driver: Failed to search PartID. Use 'UNKNOWN' instead.\n");
+	*cpu = &NuMicroParts[sizeof(NuMicroParts) / sizeof(NuMicroParts[0]) - 1];
+	LOG_INFO("Device Name: %s", (*cpu)->partname);
+	
 	return ERROR_FAIL;
 }
 
@@ -1209,26 +1262,43 @@ static int numicro_get_flash_size(struct flash_bank *bank, const struct numicro_
 
 static int numicro_probe(struct flash_bank *bank)
 {
-	uint32_t flash_size, offset = 0;
+	uint32_t flash_size = 0, offset = 0;
 	int num_pages;
 	const struct numicro_cpu_type *cpu;
 	struct target *target = bank->target;
+	struct armv7m_common *armv7m = target_to_armv7m(target);
 	int retval = ERROR_OK;
 
 	retval = numicro_get_cpu_type(target, &cpu);
 	if (retval != ERROR_OK) {
 		LOG_WARNING("NuMicro flash driver: Failed to detect a known part\n");
-		return ERROR_FLASH_OPERATION_FAILED;
+		//return ERROR_FLASH_OPERATION_FAILED;
 	}
 
 	retval = numicro_get_flash_size(bank, cpu, &flash_size);
 	if (retval != ERROR_OK) {
 		LOG_WARNING("NuMicro flash driver: Failed to detect flash size\n");
-		return ERROR_FLASH_OPERATION_FAILED;
+		//return ERROR_FLASH_OPERATION_FAILED;
 	}
 
-	num_pages = flash_size / m_pageSize;
+	// decide the page size
+	if (armv7m->arm.is_armv6m) {
+		m_pageSize = NUMICRO_PAGESIZE;
+	}
+	else if (armv7m->arm.is_armv8m) {
+		m_pageSize = NUMICRO_PAGESIZE * 4;
+	}
+	else { // armv7m
+		if ((cpu->partid & 0x00FFF000) == 0x00D48000) {
+			m_pageSize = NUMICRO_PAGESIZE * 8; // for M480
+		}
+		else {
+			m_pageSize = NUMICRO_PAGESIZE * 4;
+		}
+	}
+	LOG_DEBUG("Nuvoton pageSize: 0x%" PRIx32 "", m_pageSize);
 
+	num_pages = flash_size / m_pageSize;
 	bank->num_sectors = num_pages;
 	bank->sectors = malloc(sizeof(struct flash_sector) * num_pages);
 	bank->size = flash_size;
@@ -1257,7 +1327,6 @@ static int numicro_auto_probe(struct flash_bank *bank)
 		return ERROR_OK;
 	return numicro_probe(bank);
 }
-
 
 /* This is the function called in the config file. */
 FLASH_BANK_COMMAND_HANDLER(numicro_flash_bank_command)
