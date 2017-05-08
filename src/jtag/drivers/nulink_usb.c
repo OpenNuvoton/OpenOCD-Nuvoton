@@ -75,6 +75,8 @@ struct nulink_usb_handle_s {
 #define CMD_MCU_FREE_RUN			0xD3UL
 #define CMD_SET_CONFIG				0xA2UL
 
+#define ARM_SRAM_BASE				0x20000000
+
 #define HARDWARECONFIG_NULINKPRO    1
 
 enum PROCESSOR_STATE_E {
@@ -1033,6 +1035,11 @@ static int nulink_usb_write_mem(void *handle, uint32_t addr, uint32_t size,
 	struct nulink_usb_handle_s *h = handle;
 
 	//LOG_DEBUG("nulink_usb_write_mem");
+
+	if (addr < ARM_SRAM_BASE) {
+		LOG_DEBUG("nulink_usb_write_mem: since the address is below ARM_SRAM_BASE, the function does not support this kind of writing.");
+		return retval;
+	}
 
 	/* calculate byte count */
 	count *= size;
