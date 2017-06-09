@@ -35,7 +35,7 @@
 
 #include <target/target.h>
 
-static struct hl_interface_s hl_if = { {0, 0, 0, 0, 0, HL_TRANSPORT_UNKNOWN, false, -1}, 0, 0 };
+static struct hl_interface_s hl_if = { { 0, 0, 0, 0, { 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0 }, 0, HL_TRANSPORT_UNKNOWN, false, -1 }, 0, 0 };
 
 int hl_interface_open(enum hl_transports tr)
 {
@@ -277,6 +277,43 @@ COMMAND_HANDLER(hl_interface_handle_vid_pid_command)
 	return ERROR_OK;
 }
 
+COMMAND_HANDLER(hl_interface_handle_vids_pids_command)
+{
+	LOG_DEBUG("hl_interface_handle_vids_pids_command");
+
+	if (CMD_ARGC > 10) {
+		LOG_WARNING("ignoring extra IDs in hl_vid_pid (maximum is 5 pair)");
+		return ERROR_COMMAND_SYNTAX_ERROR;
+	}
+
+	if (CMD_ARGC >= 2) {
+		COMMAND_PARSE_NUMBER(u16, CMD_ARGV[0], hl_if.param.vids[0]);
+		COMMAND_PARSE_NUMBER(u16, CMD_ARGV[1], hl_if.param.pids[0]);
+	}
+
+	if (CMD_ARGC >= 4) {
+		COMMAND_PARSE_NUMBER(u16, CMD_ARGV[2], hl_if.param.vids[1]);
+		COMMAND_PARSE_NUMBER(u16, CMD_ARGV[3], hl_if.param.pids[1]);
+	}
+
+	if (CMD_ARGC >= 6) {
+		COMMAND_PARSE_NUMBER(u16, CMD_ARGV[4], hl_if.param.vids[2]);
+		COMMAND_PARSE_NUMBER(u16, CMD_ARGV[5], hl_if.param.pids[2]);
+	}
+
+	if (CMD_ARGC >= 8) {
+		COMMAND_PARSE_NUMBER(u16, CMD_ARGV[6], hl_if.param.vids[3]);
+		COMMAND_PARSE_NUMBER(u16, CMD_ARGV[7], hl_if.param.pids[3]);
+	}
+
+	if (CMD_ARGC >= 10) {
+		COMMAND_PARSE_NUMBER(u16, CMD_ARGV[8], hl_if.param.vids[4]);
+		COMMAND_PARSE_NUMBER(u16, CMD_ARGV[9], hl_if.param.pids[4]);
+	}
+
+	return ERROR_OK;
+}
+
 COMMAND_HANDLER(interface_handle_hla_command)
 {
 	if (CMD_ARGC != 1)
@@ -320,6 +357,13 @@ static const struct command_registration hl_interface_command_handlers[] = {
 	 .mode = COMMAND_CONFIG,
 	 .help = "the vendor and product ID of the adapter",
 	 .usage = "(vid pid)* ",
+	 },
+	 {
+		 .name = "hla_vids_pids",
+		 .handler = &hl_interface_handle_vids_pids_command,
+		 .mode = COMMAND_CONFIG,
+		 .help = "the vendor and product IDs (max 5 pairs) of the adapter",
+		 .usage = "(vid pid)* ",
 	 },
 	 {
 	 .name = "hla_command",

@@ -1037,7 +1037,7 @@ static int nulink_usb_write_mem(void *handle, uint32_t addr, uint32_t size,
 	//LOG_DEBUG("nulink_usb_write_mem");
 
 	if (addr < ARM_SRAM_BASE) {
-		LOG_DEBUG("nulink_usb_write_mem: since the address is below ARM_SRAM_BASE, the function does not support this kind of writing.");
+		LOG_DEBUG("since the address is below ARM_SRAM_BASE, the function does not support this kind of writing.");
 		return retval;
 	}
 
@@ -1199,18 +1199,20 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 	const uint16_t pids[] = { param->pid, 0 };
 	const char *serial = param->serial;
 
-	LOG_DEBUG("transport: %d vid: 0x%04x pid: 0x%04x serial: %s",
+	if (param->vid != 0 && param->pid != 0) {
+		LOG_DEBUG("transport: %d vid: 0x%04x pid: 0x%04x serial: %s",
 			param->transport, param->vid, param->pid,
 			param->serial ? param->serial : "");
+	}
 
 	do {
 		if (jtag_libusb_open(vids, pids, serial, &h->fd) != ERROR_OK) {
-			LOG_ERROR("open failed");
-			goto error_open;
+			if (jtag_libusb_open(param->vids, param->pids, serial, &h->fd) != ERROR_OK) {
+				LOG_ERROR("open failed");
+				goto error_open;
+			}
 		}
-		else {
-			LOG_DEBUG("jtag_libusb_open succeeded");
-		}
+		LOG_DEBUG("jtag_libusb_open succeeded");
 
 		jtag_libusb_set_configuration(h->fd, 0);
 
@@ -1277,7 +1279,7 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 	
 	LOG_DEBUG("nulink_usb_open: we manually perform nulink_usb_reset");
 	nulink_usb_write_debug_reg(h, 0xe000edf0, 0xa05f0001);
-	//nulink_usb_write_debug_reg(h, 0xe000edfc, 0x01000001);
+	//nulink_usb_write_debug_reg(h, 0xe000edfc, 0x01000000); /* reset but not halt */
 	//nulink_usb_write_debug_reg(h, 0xe000ed0c, 0x05fa0004);
 	nulink_usb_reset(h);
 

@@ -1,6 +1,6 @@
 /***************************************************************************
  *   Copyright (C) 2005 by Dominic Rath <Dominic.Rath@gmx.de>              *
- *   Copyright (C) 2007-2010 Øyvind Harboe <oyvind.harboe@zylin.com>       *
+ *   Copyright (C) 2007-2010 ?yvind Harboe <oyvind.harboe@zylin.com>       *
  *   Copyright (C) 2008 by Spencer Oliver <spen@spen-soft.co.uk>           *
  *   Copyright (C) 2009 Zachary T Welch <zw@superlucidity.net>             *
  *   Copyright (C) 2010 by Antonio Borneo <borneo.antonio@gmail.com>       *
@@ -596,7 +596,7 @@ int flash_write_unlock(struct target *target, struct image *image,
 		int section_last;
 		uint32_t run_address = sections[section]->base_address + section_offset;
 		uint32_t run_size = sections[section]->size - section_offset;
-		int pad_bytes = 0;
+		//int pad_bytes = 0;
 
 		if (sections[section]->size ==  0) {
 			LOG_WARNING("empty section %d", section);
@@ -619,42 +619,44 @@ int flash_write_unlock(struct target *target, struct image *image,
 		/* collect consecutive sections which fall into the same bank */
 		section_last = section;
 		padding[section] = 0;
-		while ((run_address + run_size - 1 < c->base + c->size - 1) &&
-				(section_last + 1 < image->num_sections)) {
-			/* sections are sorted */
-			assert(sections[section_last + 1]->base_address >= c->base);
-			if (sections[section_last + 1]->base_address >= (c->base + c->size)) {
-				/* Done with this bank */
-				break;
-			}
+		//if (erase) {
+		//	while ((run_address + run_size - 1 < c->base + c->size - 1) &&
+		//		(section_last + 1 < image->num_sections)) {
+		//		/* sections are sorted */
+		//		assert(sections[section_last + 1]->base_address >= c->base);
+		//		if (sections[section_last + 1]->base_address >= (c->base + c->size)) {
+		//			/* Done with this bank */
+		//			break;
+		//		}
 
-			/* FIXME This needlessly touches sectors BETWEEN the
-			 * sections it's writing.  Without auto erase, it just
-			 * writes ones.  That WILL INVALIDATE data in cases
-			 * like Stellaris Tempest chips, corrupting internal
-			 * ECC codes; and at least FreeScale suggests issues
-			 * with that approach (in HC11 documentation).
-			 *
-			 * With auto erase enabled, data in those sectors will
-			 * be needlessly destroyed; and some of the limited
-			 * number of flash erase cycles will be wasted...
-			 *
-			 * In both cases, the extra writes slow things down.
-			 */
+		//		/* FIXME This needlessly touches sectors BETWEEN the
+		//		 * sections it's writing.  Without auto erase, it just
+		//		 * writes ones.  That WILL INVALIDATE data in cases
+		//		 * like Stellaris Tempest chips, corrupting internal
+		//		 * ECC codes; and at least FreeScale suggests issues
+		//		 * with that approach (in HC11 documentation).
+		//		 *
+		//		 * With auto erase enabled, data in those sectors will
+		//		 * be needlessly destroyed; and some of the limited
+		//		 * number of flash erase cycles will be wasted...
+		//		 *
+		//		 * In both cases, the extra writes slow things down.
+		//		 */
 
-			/* if we have multiple sections within our image,
-			 * flash programming could fail due to alignment issues
-			 * attempt to rebuild a consecutive buffer for the flash loader */
-			pad_bytes = (sections[section_last + 1]->base_address) - (run_address + run_size);
-			padding[section_last] = pad_bytes;
-			run_size += sections[++section_last]->size;
-			run_size += pad_bytes;
+		//		/* if we have multiple sections within our image,
+		//		 * flash programming could fail due to alignment issues
+		//		 * attempt to rebuild a consecutive buffer for the flash loader */
+		//		pad_bytes = (sections[section_last + 1]->base_address) - (run_address + run_size);
+		//		padding[section_last] = pad_bytes;
+		//		run_size += sections[++section_last]->size;
+		//		run_size += pad_bytes;
 
-			if (pad_bytes > 0)
-				LOG_INFO("Padding image section %d with %d bytes",
-					section_last-1,
-					pad_bytes);
-		}
+		//		if (pad_bytes > 0)
+		//			LOG_INFO("Padding image section %d with %d bytes",
+		//			section_last - 1,
+		//			pad_bytes);
+		//	}
+		//}
 
 		if (run_address + run_size - 1 > c->base + c->size - 1) {
 			/* If we have more than one flash chip back to back, then we limit

@@ -39,6 +39,10 @@ struct hl_interface_param_s {
 	/** */
 	uint16_t pid;
 	/** */
+	uint16_t vids[5];
+	/** */
+	uint16_t pids[5];
+	/** */
 	unsigned api;
 	/** */
 	enum hl_transports transport;
