@@ -675,7 +675,7 @@ static int nulink_usb_read_mem8(void *handle, uint32_t addr, uint16_t len,
 		/* fill in the output buffer */
 		for (i = 0; i < count; i++) {
 			if (i == 0) 
-				memcpy(buffer, h->databuf + 4 + offset, 2);
+				memcpy(buffer, h->databuf + 4 + offset, len);
 			else 
 				memcpy(buffer + 2 * i, h->databuf + 4 * (2 * i + 1), len - 2);
 		}
