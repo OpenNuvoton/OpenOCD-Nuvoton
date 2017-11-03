@@ -1181,10 +1181,37 @@ static int nulink_usb_close(void *handle)
 
 static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 {
-	int err, retry_count = 1;
+	int err, retry_count = 1, result = 0;
 	struct nulink_usb_handle_s *h;
 
 	LOG_DEBUG("nulink_usb_open");
+	char buf[512];
+	sprintf(buf, "\"c:\\Program Files\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe\" -o conflict");
+	result = system(buf);
+	LOG_DEBUG("Run NuLink.exe (result: %d)", result);
+	if (result == -33) {
+		LOG_DEBUG("A conflict happened! (result: %d)", result);
+		return ERROR_FAIL;
+	}
+	else if (result == 0) {
+		sprintf(buf, "start \"\" \"c:\\Program Files\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe\" -o wait");
+		result = system(buf);
+		LOG_DEBUG("wait NuLink.exe (result: %d)", result);
+	}
+	else {
+		sprintf(buf, "\"c:\\Program Files (x86)\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe\" -o conflict");
+		result = system(buf);
+		LOG_DEBUG("Run NuLink.exe again for x64 (result: %d)", result);
+		if (result == -33) {
+			LOG_DEBUG("A conflict happened! (result: %d)", result);
+			return ERROR_FAIL;
+		}
+		else if (result == 0) {
+			sprintf(buf, "start \"\" \"c:\\Program Files (x86)\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe\" -o wait");
+			result = system(buf);
+			LOG_DEBUG("wait NuLink.exe (result: %d)", result);
+		}
+	}
 
 	h = calloc(1, sizeof(struct nulink_usb_handle_s));
 
