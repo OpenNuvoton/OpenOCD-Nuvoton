@@ -266,3 +266,13 @@ int jtag_libusb_get_pid(struct jtag_libusb_device *dev, uint16_t *pid)
 
 	return ERROR_FAIL;
 }
+
+int jtag_libusb_nuvoton_mutex_lock()
+{
+	return libusb_nuvoton_mutex_lock();
+}
+
+int jtag_libusb_nuvoton_mutex_unlock()
+{
+	return libusb_nuvoton_mutex_unlock();
+}

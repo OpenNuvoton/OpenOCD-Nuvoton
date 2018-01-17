@@ -103,24 +103,6 @@ enum CONNECT_E {
 	CONNECT_ICP_MODE = 5     /* Support NUC505 ICP mode*/
 };
 
-static const struct {
-	int speed;
-	int speed_divisor;
-} nulink_khz_to_speed_map[] = {
-	{4000, 0},
-	{1800, 1}, /* default */
-	{1200, 2},
-	{950,  3},
-	{480,  7},
-	{240, 15},
-	{125, 31},
-	{100, 40},
-	{50,  79},
-	{25, 158},
-	{15, 265},
-	{5,  798}
-};
-
 //static void print64BytesBufferContent(char *bufferName, uint8_t *buf, int size)
 //{
 //	unsigned i, j;
@@ -146,6 +128,7 @@ static int nulink_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 
 	assert(handle != NULL);
 	
+	jtag_libusb_nuvoton_mutex_lock();
 	jtag_libusb_interrupt_write(h->fd, h->tx_ep, (char *)h->cmdbuf, cmdsize,
 		NULINK_WRITE_TIMEOUT);
 
@@ -174,6 +157,7 @@ static int nulink_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 	//	print64BytesBufferContent(bufName1, buf, NULINK_HID_MAX_SIZE);
 	//}
 	
+	jtag_libusb_nuvoton_mutex_unlock();
 	return ERROR_OK;
 }
 
@@ -1034,7 +1018,7 @@ static int nulink_usb_write_mem(void *handle, uint32_t addr, uint32_t size,
 	uint32_t bytes_remaining;
 	struct nulink_usb_handle_s *h = handle;
 
-	//LOG_DEBUG("nulink_usb_write_mem");
+	//LOG_DEBUG("nulink_usb_read_mem: addr(%04x), size(%d), count(%d)", addr, size, count);
 
 	if (addr < ARM_SRAM_BASE) {
 		LOG_DEBUG("since the address is below ARM_SRAM_BASE, the function does not support this kind of writing.");
@@ -1194,7 +1178,7 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 		return ERROR_FAIL;
 	}
 	else if (result == 0) {
-		sprintf(buf, "start \"\" \"c:\\Program Files\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe\" -o wait");
+		sprintf(buf, "start /b \"\" \"c:\\Program Files\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe\" -o wait");
 		result = system(buf);
 		LOG_DEBUG("wait NuLink.exe (result: %d)", result);
 	}
@@ -1207,7 +1191,7 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 			return ERROR_FAIL;
 		}
 		else if (result == 0) {
-			sprintf(buf, "start \"\" \"c:\\Program Files (x86)\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe\" -o wait");
+			sprintf(buf, "start /b \"\" \"c:\\Program Files (x86)\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe\" -o wait");
 			result = system(buf);
 			LOG_DEBUG("wait NuLink.exe (result: %d)", result);
 		}
