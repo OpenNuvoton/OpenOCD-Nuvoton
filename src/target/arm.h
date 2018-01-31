@@ -5,7 +5,7 @@
  * Copyright (C) 2008 by Spencer Oliver
  * spen@spen-soft.co.uk
  *
- * Copyright (C) 2009 by Øyvind Harboe
+ * Copyright (C) 2009 by ?yvind Harboe
  * oyvind.harboe@zylin.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -129,6 +129,12 @@ struct arm {
 
 	/** Flag reporting armv8m based core. */
 	bool is_armv8m;
+
+	/** Flag reporting armv8m secure extend. */
+	bool is_armv8mSecureExtend;
+	
+	/** Flag reporting whether armv8m secure invasive debug allowed. */
+	bool is_armv8mSecureInvasiveDebugAllowed;
 
 	/** Flag reporting whether semihosting is active. */
 	bool is_semihosting;

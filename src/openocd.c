@@ -2,7 +2,7 @@
  *   Copyright (C) 2005 by Dominic Rath                                    *
  *   Dominic.Rath@gmx.de                                                   *
  *                                                                         *
- *   Copyright (C) 2007-2010 Øyvind Harboe                                 *
+ *   Copyright (C) 2007-2010 ?yvind Harboe                                 *
  *   oyvind.harboe@zylin.com                                               *
  *                                                                         *
  *   Copyright (C) 2008 Richard Missenden                                  *
@@ -47,6 +47,8 @@
 
 #define OPENOCD_VERSION	\
 	"Open On-Chip Debugger " VERSION RELSTR " (" PKGBLDDATE ")"
+
+#define	MICROSEMI
 
 static const char openocd_startup_tcl[] = {
 #include "startup_tcl.inc"
@@ -274,6 +276,29 @@ static int openocd_thread(int argc, char *argv[], struct command_context *cmd_ct
 {
 	int ret;
 
+#ifdef MICROSEMI
+	/*
+	 * If launched by GNU ARM Eclipse (GAE) then strip the trailing -c and 
+	 * 'echo "Started by GNU ARM Eclipse"' command line args. GAE uses this 
+	 * string as a simple synchronization mechanism to tell it when it can 
+	 * launch GDB which will then connect to OpenOCD's GDB/MI socket interface.
+	 * However this echo command is processed by parse_config_file() but
+	 * the GDB/MI socket interface is only initialized/configure later by
+	 * command_run_line() so there's a race condition whereby GDB may try to 
+	 * connect before this interface is ready. So instead the string is echoed
+	 * later after we know that the GDB/MI interface is ready and waiting for 
+	 * connections.
+	 * 
+	 * See also: https://sourceforge.net/p/openocd/tickets/147/
+	 */
+	int f_GAE = 0;
+	if (strstr(argv[argc-1], "Started by GNU ARM Eclipse"))
+	{
+		argc -= 2;
+		f_GAE = 1;
+	}
+#endif /* MICROSEMI */
+	
 	if (parse_cmdline_args(cmd_ctx, argc, argv) != ERROR_OK)
 		return ERROR_FAIL;
 
@@ -296,6 +321,14 @@ static int openocd_thread(int argc, char *argv[], struct command_context *cmd_ct
 			return ERROR_FAIL;
 	}
 
+#ifdef MICROSEMI
+	/* See comments above */
+	if (f_GAE)
+	{
+		LOG_USER("Started by GNU ARM Eclipse");
+	}
+#endif /* MICROSEMI */
+	
 	ret = server_loop(cmd_ctx);
 
 	int last_signal = server_quit();

@@ -1935,7 +1935,7 @@ static void cortex_m_dwt_free(struct target *target)
 int cortex_m_examine(struct target *target)
 {
 	int retval;
-	uint32_t cpuid, fpcr, mvfr0, mvfr1;
+	uint32_t cpuid, regValue, fpcr, mvfr0, mvfr1;
 	int i;
 	struct cortex_m_common *cortex_m = target_to_cm(target);
 	struct adiv5_dap *swjdp = cortex_m->armv7m.arm.dap;
@@ -2018,6 +2018,38 @@ int cortex_m_examine(struct target *target)
 			armv7m->arm.is_armv6m = true;
 		} else if (i == 23) {
 			armv7m->arm.is_armv8m = true;
+			
+			armv7m->arm.is_armv8mSecureExtend = true;
+			retval = target_read_u32(target, V8M_DAUTHSTATUS, &regValue);
+			if (retval != ERROR_OK) {
+				LOG_ERROR("Could not read the value of DAUTHSTATUS");
+			}
+			else {
+				if (regValue & V8M_DAUTHSTATUS_SID) {
+					LOG_DEBUG("Secure extend(DAUTHSTATUS: 0x%" PRIx32 ").", regValue);
+					armv7m->arm.is_armv8mSecureExtend = true;
+				}
+				else {
+					LOG_DEBUG("Not secure extend(DAUTHSTATUS: 0x%" PRIx32 ").", regValue);
+					armv7m->arm.is_armv8mSecureExtend = false;
+				}
+			}
+			
+			armv7m->arm.is_armv8mSecureInvasiveDebugAllowed = true;
+			retval = target_read_u32(target, DCB_DHCSR, &regValue);
+			if (retval != ERROR_OK) {
+				LOG_ERROR("Could not read the value of DHCSR");
+			}
+			else {
+				if (regValue & S_SDE) {
+					LOG_DEBUG("Secure invasive debug allowed(DHCSR: 0x%" PRIx32 ").", regValue);
+					armv7m->arm.is_armv8mSecureInvasiveDebugAllowed = true;
+				}
+				else {
+					LOG_DEBUG("Secure invasive debug prohibited(DHCSR: 0x%" PRIx32 ").", regValue);
+					armv7m->arm.is_armv8mSecureInvasiveDebugAllowed = false;
+				}		
+			}			
 		}
 
 		if (armv7m->fp_feature == FP_NONE &&

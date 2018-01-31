@@ -77,6 +77,7 @@
 #define TPIU_FSCR	0xE0040308
 
 /* DCB_DHCSR bit and field definitions */
+#define DCB_DHCSR   0xE000EDF0
 #define DBGKEY		(0xA05F << 16)
 #define C_DEBUGEN	(1 << 0)
 #define C_HALT		(1 << 1)
@@ -86,6 +87,7 @@
 #define S_HALT		(1 << 17)
 #define S_SLEEP		(1 << 18)
 #define S_LOCKUP	(1 << 19)
+#define S_SDE       (1 << 20)
 #define S_RETIRE_ST	(1 << 24)
 #define S_RESET_ST	(1 << 25)
 
@@ -139,6 +141,10 @@
 #define V7M_CPUID_PARTNO     0xC24
 #define V8MBL_CPUID_PARTNO   0xD20
 #define V8MML_CPUID_PARTNO   0xD21
+
+#define V8M_DAUTHSTATUS      0xE000EFB8UL
+#define V8M_DAUTHSTATUS_SID  0x00000030UL
+
 
 struct cortex_m_fp_comparator {
 	int used;

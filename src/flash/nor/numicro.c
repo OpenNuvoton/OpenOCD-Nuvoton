@@ -145,7 +145,7 @@ struct numicro_cpu_type {
 	 {NUMICRO_CONFIG_BASE, (config_size)}}
 
 static const struct numicro_cpu_type NuMicroParts[] = {
-	/*PART NO*/     /*PART ID*/ /*Banks*/
+	/*PART Name*//*PART ID*/ /*Banks*/
 	/* M051AN */
 	{"M052LAN",  0x00005200, NUMICRO_BANKS_GENERAL(8*1024,  4*1024, 4*1024, 4)},
 	{"M054LAN",  0x00005400, NUMICRO_BANKS_GENERAL(16*1024, 4*1024, 4*1024, 4)},
@@ -614,11 +614,20 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"M487SGAAE", 0x00D48711, NUMICRO_BANKS_GENERAL(0x201000, 0*1024, 4*1024, 16)},
 	{"M480TEST", 0x00D480FF, NUMICRO_BANKS_GENERAL(0x201000, 0*1024, 4*1024, 16)},
 
+	/* M251 */
+	// { "", , NUMICRO_BANKS_GENERAL(192*1024, 0*1024, 4*1024, 12) },
+	// { "", , NUMICRO_BANKS_GENERAL(192*1024, 0*1024, 4*1024, 12) },
+	// { "", , NUMICRO_BANKS_GENERAL(192*1024, 0*1024, 4*1024, 12) },
+	// { "", , NUMICRO_BANKS_GENERAL(192*1024, 0*1024, 4*1024, 12) },
+	
 	/* M2351 */
-	{ "M2351XXXXX", 0xFFFFFFFF, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 16) },
+	//{ "M2351XXXXX", 0xFFFFFFFF, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 16) },
 	{ "M2351XXXX1", 0x00082340, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 16) },
 	{ "M2351XXXX2", 0x10008234, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 16) },
-	{ "M2351XXXX3", 0x00235100, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 16) },
+	{ "M2351KIAAE", 0x00235100, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 16) },
+	{ "M2351SIAAE", 0x00235101, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 16) },
+	{ "M2351CIAAE", 0x00235102, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 16) },
+	{ "M2351ZIAAE", 0x00235103, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 16) },
 
 	{ "UNKNOWN", 0x00000000, NUMICRO_BANKS_GENERAL(0x10080000, 0 * 1024, 4 * 1024, 16) },
 };
@@ -633,15 +642,13 @@ struct  numicro_flash_bank {
 /* Private variables */
 uint32_t m_pageSize = NUMICRO_PAGESIZE;
 uint32_t m_addressMinusOffset = 0;
-uint32_t m_M23SecureDebugState = 0; /* 0:not M23; 1:M23 and Secure Debug Enabled; 2:M23 and Secure Debug Disabled */
+uint32_t m_M23SecureDebugState = 0; /* 0:Normal; 1:M23 and Secure Debug Enabled; 2:M23 and Secure Debug Disabled */
 uint32_t m_flashInfo = 0; /* bit 0:SPROM exists; */
 
 /* Private methods */
 static int numicro_get_arm_arch(struct target *target)
 {
 	struct armv7m_common *armv7m = target_to_armv7m(target);
-	int retval = ERROR_OK;
-	uint32_t status;
 
 	if (armv7m->arm.is_armv6m) {
 		LOG_DEBUG("NuMicro arm architecture: armv6m");
@@ -651,18 +658,20 @@ static int numicro_get_arm_arch(struct target *target)
 	else if (armv7m->arm.is_armv8m) {
 		LOG_DEBUG("NuMicro arm architecture: armv8m");
 		m_addressMinusOffset = 0x10000000;
-		/* check whether Secure Debug is Enabled */
-		retval = target_read_u32(target, NUMICRO_SCS_DHCSR, &status);
-		if (retval != ERROR_OK)
-			return retval;
-		if (status & DHCSR_S_SDE) {
-			LOG_DEBUG("Secure invasive debug allowed(DHCSR: 0x%" PRIx32 ").", status);
+		if (armv7m->arm.is_armv8mSecureExtend) {
+			// M2351
+			if (armv7m->arm.is_armv8mSecureInvasiveDebugAllowed) {
 			m_M23SecureDebugState = 1;
 		}
 		else {
-			LOG_DEBUG("Secure invasive debug prohibited(DHCSR: 0x%" PRIx32 ").", status);
 			m_M23SecureDebugState = 2;
 		}
+	}
+	else {
+			// M251
+			m_M23SecureDebugState = 0;
+		}
+
 	}
 	else {
 		LOG_DEBUG("NuMicro arm architecture: armv7m");
@@ -1657,7 +1666,13 @@ static int numicro_probe(struct flash_bank *bank)
 		}
 	}
 	else if (armv7m->arm.is_armv8m) { /* M23 */
-		m_pageSize = NUMICRO_PAGESIZE * 4;
+		
+		if (armv7m->arm.is_armv8mSecureExtend) {
+			m_pageSize = NUMICRO_PAGESIZE * 4; /* for M2351 */
+		}
+		else {
+			m_pageSize = NUMICRO_PAGESIZE;     /* for M251 */
+		}
 	}
 	else { /* armv7m (M4) */
 		if ((cpu->partid & 0x00FFF000) == 0x00D48000) {
