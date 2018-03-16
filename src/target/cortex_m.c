@@ -2016,10 +2016,25 @@ int cortex_m_examine(struct target *target)
 		} else if (i == 0) {
 			/* Cortex-M0 does not support unaligned memory access */
 			armv7m->arm.is_armv6m = true;
-		} else if (i == 23) {
-			armv7m->arm.is_armv8m = true;
 			
+			retval = target_read_u32(target, NUC_M0_FLASH_VERSION, &regValue);
+			if (retval != ERROR_OK) {
+				LOG_ERROR("Could not read the value of NUC_M0_FLASH_VERSION");
+			}
+			else {
+				if (regValue == NUC_M0_FLASH_MSB4) {
+					LOG_DEBUG("MSB of FMC of the Nuvoton M0 chip is 4(NUC_M0_FLASH_VERSION): 0x%" PRIx32 ").", regValue);
+					armv7m->arm.is_NUC_M0_FMC_MSB4 = true;
+				}
+				else {
+					LOG_DEBUG("MSB of FMC of the Nuvoton M0 chip is 5(NUC_M0_FLASH_VERSION): 0x%" PRIx32 ").", regValue);
+					armv7m->arm.is_NUC_M0_FMC_MSB4 = false;
+				}
+			}
+		} else if (i == 23) {
+			armv7m->arm.is_armv8m = true;			
 			armv7m->arm.is_armv8mSecureExtend = true;
+			
 			retval = target_read_u32(target, V8M_DAUTHSTATUS, &regValue);
 			if (retval != ERROR_OK) {
 				LOG_ERROR("Could not read the value of DAUTHSTATUS");

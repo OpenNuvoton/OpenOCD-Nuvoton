@@ -102,7 +102,6 @@
 #define ISPCMD_ERASE          0x22
 #define ISPCMD_CHIPERASE      0x26   /* Undocumented isp "Chip-Erase" command */
 #define ISPCMD_READ_CID       0x0B
-#define ISPCMD_READ_DID       0x0C
 #define ISPCMD_READ_UID       0x04
 #define ISPCMD_VECMAP         0x2E
 #define ISPTRG_ISPGO          (1 << 0)
@@ -652,7 +651,14 @@ static int numicro_get_arm_arch(struct target *target)
 
 	if (armv7m->arm.is_armv6m) {
 		LOG_DEBUG("NuMicro arm architecture: armv6m");
+		
+		if (armv7m->arm.is_NUC_M0_FMC_MSB4) {
+			m_addressMinusOffset = 0x10000000;
+		}
+		else {
 		m_addressMinusOffset = 0x0;
+		}		
+
 		m_M23SecureDebugState = 0;
 	}
 	else if (armv7m->arm.is_armv8m) {
@@ -1082,6 +1088,19 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 	/* Difference between M0 and M4(M23) */
 	if (armv7m->arm.is_armv6m) {
 		/* allocate working area with flash programming code */
+		if (armv7m->arm.is_NUC_M0_FMC_MSB4) {
+			if (target_alloc_working_area(target, sizeof(numicro_M4_M23_flash_write_code),
+				&write_algorithm) != ERROR_OK) {
+				LOG_WARNING("no working area available, can't do block memory writes");
+				return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
+			}
+
+			retval = target_write_buffer(target, write_algorithm->address,
+				sizeof(numicro_M4_M23_flash_write_code), numicro_M4_M23_flash_write_code);
+			if (retval != ERROR_OK)
+				return retval;
+		}
+		else {
 		if (target_alloc_working_area(target, sizeof(numicro_M0_flash_write_code),
 			&write_algorithm) != ERROR_OK) {
 			LOG_WARNING("no working area available, can't do block memory writes");
@@ -1092,6 +1111,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			sizeof(numicro_M0_flash_write_code), numicro_M0_flash_write_code);
 		if (retval != ERROR_OK)
 			return retval;
+	}
 	}
 	else { /* for M4 and M23 */
 		if (m_M23SecureDebugState != 2) {

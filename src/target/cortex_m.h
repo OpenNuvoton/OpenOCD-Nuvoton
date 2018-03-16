@@ -145,6 +145,9 @@
 #define V8M_DAUTHSTATUS      0xE000EFB8UL
 #define V8M_DAUTHSTATUS_SID  0x00000030UL
 
+/* NUVOTON FMC */
+#define NUC_M0_FLASH_VERSION   0x40003FFC
+#define NUC_M0_FLASH_MSB4      0x20171011 /* most significant bit is 4*/
 
 struct cortex_m_fp_comparator {
 	int used;

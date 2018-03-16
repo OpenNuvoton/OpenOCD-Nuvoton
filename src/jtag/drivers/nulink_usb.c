@@ -123,6 +123,16 @@ static void print64BytesBufferContent(char *bufferName, uint8_t *buf, int size)
 }
 #endif
 
+#ifndef _WIN32	
+double GetTickCount(void) 
+{
+  struct timespec now;
+  if (clock_gettime(CLOCK_MONOTONIC, &now))
+    return 0;
+  return now.tv_sec * 1000.0 + now.tv_nsec / 1000000.0;
+}
+#endif
+
 static void nulink_usb_init_buffer(void *handle, uint32_t size);
 
 static int nulink_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
@@ -130,8 +140,9 @@ static int nulink_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 	struct nulink_usb_handle_s *h = handle;
 	int startTime = GetTickCount(), cmdID;
 	assert(handle != NULL);
-	
+#ifdef _WIN32	
 	jtag_libusb_nuvoton_mutex_lock();
+#endif
 	jtag_libusb_interrupt_write(h->fd, h->tx_ep, (char *)h->cmdbuf, NULINK_HID_MAX_SIZE,
 		NULINK_WRITE_TIMEOUT);
 #ifdef SHOW_BUFFER	
@@ -153,7 +164,9 @@ static int nulink_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 	} while ((h->cmdbuf[0] != (buf[0] & 0x7F)) || 
 			(cmdsize != buf[1]) ||
 			(cmdID != 0xff && cmdID != CMD_WRITE_REG && cmdID != CMD_WRITE_RAM&& cmdID != CMD_CHECK_MCU_STOP  && cmdID != buf[2]));
+#ifdef _WIN32
 	jtag_libusb_nuvoton_mutex_unlock();
+#endif			
 	return ERROR_OK;
 }
 
@@ -1212,8 +1225,8 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 	}
 
 	do {
-		if (jtag_libusb_open(vids, pids, serial, &h->fd) != ERROR_OK) {
-			if (jtag_libusb_open(param->vids, param->pids, serial, &h->fd) != ERROR_OK) {
+		if (jtag_libusb_open(param->vids, param->pids, serial, &h->fd) != ERROR_OK) {
+			if (jtag_libusb_open(vids, pids, serial, &h->fd) != ERROR_OK) {			
 				LOG_ERROR("open failed");
 				goto error_open;
 			}
