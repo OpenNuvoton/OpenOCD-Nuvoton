@@ -858,8 +858,8 @@ static int nulink_usb_read_mem32(void *handle, uint32_t addr, uint16_t len,
 			memcpy(buffer, h->databuf + 4 * (2 * i + 1), 4);
 			buffer += 4;
 			//LOG_DEBUG("NULINK read_ram(0x%08x): 0x%08x",
-			//	addr,
-			//	le_to_h_u32(h->databuf + 4 * (2 * i + 1)));
+			//	addr - 4,
+			//	le_to_h_u32(buffer - 4));
 		}
 
 		if (len >= bytes_remaining)

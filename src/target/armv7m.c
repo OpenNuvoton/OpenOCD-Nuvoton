@@ -795,7 +795,8 @@ int armv7m_maybe_skip_bkpt_inst(struct target *target, bool *inst_found)
 	 * then we have to manually step over it, otherwise
 	 * the core will break again */
 
-	if (target->debug_reason == DBG_REASON_BREAKPOINT) {
+	if (target->debug_reason == DBG_REASON_BREAKPOINT || 
+		target->debug_reason == DBG_REASON_SINGLESTEP) {
 		uint16_t op;
 		uint32_t pc = buf_get_u32(r->value, 0, 32);
 

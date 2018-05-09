@@ -2,7 +2,7 @@
  *   Copyright (C) 2005 by Dominic Rath                                    *
  *   Dominic.Rath@gmx.de                                                   *
  *                                                                         *
- *   Copyright (C) 2007-2010 Øyvind Harboe                                 *
+ *   Copyright (C) 2007-2010 ?yvind Harboe                                 *
  *   oyvind.harboe@zylin.com                                               *
  *                                                                         *
  *   Copyright (C) 2008 by Spencer Oliver                                  *
@@ -42,6 +42,200 @@
 
 #ifndef _WIN32
 #include <netinet/tcp.h>
+#endif
+
+#define LWS_SERVER
+#ifdef LWS_SERVER
+#include "libwebsockets.h"
+
+static struct lws_context *context;
+static struct target *lws_target;
+#define MAX_NUC_PAYLOAD 1024
+struct per_session_data_nuvoton {
+	size_t rx, tx;
+	unsigned char buf[LWS_PRE + MAX_NUC_PAYLOAD];
+	unsigned int len;
+	unsigned int index;
+	int final;
+	int continuation;
+	int binary;
+};
+
+static int lws_read_memory_packet(struct lws *wsi, struct per_session_data_nuvoton *pss, uint8_t const *packet, int packet_size)
+{
+	uint32_t addr = 0;
+	uint32_t len = 0;
+	uint32_t i = 0;
+	int retval, result = 0;
+	char *separator;
+	uint8_t commandCode, *buffer;
+
+	/* skip command character */
+	commandCode = *packet;
+	packet++;
+	
+	len = 4;
+	buffer = (uint8_t *)malloc(len);
+	do {
+		packet = packet + i * (8 + 1);
+		addr = strtoul(packet, &separator, 16);
+		retval = target_read_buffer(lws_target, addr, len, buffer);	  
+		if (retval != ERROR_OK) {
+			LOG_ERROR("lws failed to read buffer from a target at the addr(0x%8.8"PRIx32")!\n", addr);
+			result = 1;
+			break;
+		}
+		if (i == 0) {
+			sprintf(&pss->buf[LWS_PRE], "%c%08x", commandCode, *buffer);		
+		}
+		else {
+			sprintf(&pss->buf[LWS_PRE + i * (8 + 1)], ",%08x", *buffer);	
+		}
+		LOG_DEBUG("+++ openocd-nuvoton: TX pss->buf[LWS_PRE + i * (8 + 1)] %s, pss->len %d, i %d, packet %s, *buffer %08X, addr: 0x%8.8"PRIx32", len: 0x%8.8"PRIx32"",
+			&pss->buf[LWS_PRE + i * (8 + 1)], pss->len, i, packet, *buffer, addr, len);	
+					
+		i = i + 1;		
+	} while (*separator == ',');
+	
+	pss->tx += pss->len;
+	retval = lws_write(wsi, &pss->buf[LWS_PRE], pss->len, LWS_WRITE_TEXT);
+	if (retval < 0) {
+		LOG_ERROR("ERROR %d writing to socket, hanging up", retval);
+		result = 1;
+	}
+		
+	free(buffer);
+	
+	return result;
+}
+
+static int lws_step_continue_halt_packet(struct lws *wsi, struct per_session_data_nuvoton *pss, uint8_t const *packet, int packet_size)
+{
+	int current = 0;
+	uint32_t address = 0x0;
+	int retval = ERROR_OK, result = 0;
+
+	//LOG_DEBUG("-");
+
+	if (packet_size > 1) {
+		address = strtoul(packet + 1, NULL, 16);
+	}
+	else {
+		current = 1;
+	}
+
+	if (packet[0] == 'c') {
+		LOG_DEBUG("+++ openocd-nuvoton: continue");
+		/* resume at current address, don't handle breakpoints, not debugging */
+		retval = target_resume(lws_target, current, address, 0, 0);
+	} else if (packet[0] == 's') {
+		LOG_DEBUG("+++ openocd-nuvoton: step");
+		/* step at current or address, don't handle breakpoints */
+		retval = target_step(lws_target, current, address, 0);
+	}
+	else { 
+		LOG_DEBUG("+++ openocd-nuvoton: halt");
+		retval = target_halt(lws_target);
+	}	
+	
+	if (retval != ERROR_OK) {
+		LOG_DEBUG("+++ openocd-nuvoton: lws_step_continue_halt_packet had a error!");
+		sprintf(&pss->buf[LWS_PRE], "e");	
+		result = 1;
+	}
+	else {
+		sprintf(&pss->buf[LWS_PRE], "%c", packet[0]);
+	}
+		
+	pss->tx += 1;
+	retval = lws_write(wsi, &pss->buf[LWS_PRE], pss->len, LWS_WRITE_TEXT);	
+	if (retval < 0) {
+		LOG_ERROR("ERROR %d writing to socket, hanging up", retval);
+		result = 1;
+	}
+	
+	return result;
+}
+
+static int
+callback_nuvoton(struct lws *wsi, enum lws_callback_reasons reason, void *user,
+	      void *in, size_t len)
+{
+	struct per_session_data_nuvoton *pss =
+			(struct per_session_data_nuvoton *)user;
+	int result = 0;			
+	uint8_t *packet;
+	
+	switch (reason) {
+	case LWS_CALLBACK_ESTABLISHED:
+		pss->index = 0;
+		pss->len = -1;
+		break;
+
+	case LWS_CALLBACK_SERVER_WRITEABLE:
+do_tx:
+		if ((int)pss->len == -1)
+			break;
+
+		packet = malloc(pss->len);
+		memcpy(packet, &pss->buf[LWS_PRE], pss->len);		
+		switch (packet[0]) {
+			case 'm':
+				result = lws_read_memory_packet(wsi, pss, packet, pss->len);
+				break;
+			case 'c':
+			case 's':
+			case 't':
+				result = lws_step_continue_halt_packet(wsi, pss, packet, pss->len);
+				break;				
+			default:
+				/* ignore unknown packets */
+				LOG_DEBUG("ignoring 0x%2.2x packet", packet[0]);
+				break;				
+		}
+		
+		free(packet);
+		pss->len = -1;
+		if (pss->final)
+			pss->continuation = 0;
+		lws_rx_flow_control(wsi, 1);
+		break;
+
+	case LWS_CALLBACK_RECEIVE:
+do_rx:
+		pss->final = lws_is_final_fragment(wsi);
+		pss->binary = lws_frame_is_binary(wsi);
+		LOG_DEBUG("+++ openocd-nuvoton: RX data %s, len %ld, final %ld, pss->len=%ld",
+			  (char *) in, (long)len, (long)pss->final, (long)pss->len);
+		
+		memcpy(&pss->buf[LWS_PRE], in, len);
+		assert((int)pss->len == -1);
+		pss->len = (unsigned int)len;
+		pss->rx += len;
+
+		lws_rx_flow_control(wsi, 0);
+		lws_callback_on_writable(wsi);
+		break;
+	default:
+		break;
+	}
+
+	return result;
+}
+
+static struct lws_protocols protocols[] = {
+	/* first protocol must always be HTTP handler */
+
+	{
+		"openocd-nuvoton-protocol",		/* name - can be overridden with -e */
+		callback_nuvoton,
+		sizeof(struct per_session_data_nuvoton),	/* per_session_data_size */
+		MAX_NUC_PAYLOAD,
+	},
+	{
+		NULL, NULL, 0		/* End of list */
+	}
+};
 #endif
 
 static struct service *services;
@@ -509,7 +703,11 @@ int server_loop(struct command_context *command_context)
 				}
 			}
 		}
-
+#ifdef LWS_SERVER
+		if (lws_service(context, 10) < 0) {
+			shutdown_openocd = 1;
+		}
+#endif
 #ifdef _WIN32
 		MSG msg;
 		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -572,6 +770,36 @@ int server_init(struct command_context *cmd_ctx)
 	int ret = tcl_init();
 	if (ERROR_OK != ret)
 		return ret;
+#ifdef LWS_SERVER
+	/* web server url will be http://localhost:5555 */
+    int port = 5555;
+    struct lws_context_creation_info context_info =
+    {
+        .port = port, 
+		.iface = NULL, 
+		.protocols = protocols, 
+		.extensions = NULL,
+        .ssl_cert_filepath = NULL, 
+		.ssl_private_key_filepath = NULL, 
+		.ssl_ca_filepath = NULL,
+        .gid = -1, 
+		.uid = -1, 
+		.options = 0, 
+		NULL, 
+		.ka_time = 0, 
+		.ka_probes = 0, 
+		.ka_interval = 0
+    };
+    /* create lws context representing this server */
+    context = lws_create_context(&context_info);
+	lwsl_notice("libwebsockets-openocd-nuvoton created context\n");	
+	    if (context == NULL) {
+        LOG_ERROR("lws init failed\n");
+        return ERROR_FAIL;
+    }
+	/* we only use the first target as the lws target */
+	lws_target = all_targets;	
+#endif
 
 	return telnet_init("Open On-Chip Debugger");
 }
@@ -579,6 +807,10 @@ int server_init(struct command_context *cmd_ctx)
 int server_quit(void)
 {
 	remove_services();
+#ifdef LWS_SERVER
+	lws_context_destroy(context);
+	lwsl_notice("libwebsockets-openocd-nuvoton exited cleanly\n");	
+#endif
 	target_quit();
 
 #ifdef _WIN32
