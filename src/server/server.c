@@ -47,9 +47,13 @@
 #define LWS_SERVER
 #ifdef LWS_SERVER
 #include "libwebsockets.h"
+#include <flash/nor/core.h>
+#include <flash/nor/core.c>
+#include <flash/nor/numicro.c>
 
 static struct lws_context *context;
 static struct target *lws_target;
+extern struct flash_bank *flash_banks;
 #define MAX_NUC_PAYLOAD 1024
 struct per_session_data_nuvoton {
 	size_t rx, tx;
@@ -65,37 +69,46 @@ static int lws_read_memory_packet(struct lws *wsi, struct per_session_data_nuvot
 {
 	uint32_t addr = 0;
 	uint32_t len = 0;
+	uint32_t bufferLen = 0;
 	uint32_t i = 0;
 	int retval, result = 0;
 	char *separator;
-	uint8_t commandCode, *buffer;
+	uint8_t commandCode;
+	uint8_t *buffer;
+	uint8_t *bufferAddress;
 
 	/* skip command character */
 	commandCode = *packet;
 	packet++;
+	bufferLen = 1;
 	
 	len = 4;
 	buffer = (uint8_t *)malloc(len);
+	bufferAddress = (uint8_t *)malloc(8 + 1);
 	do {
-		packet = packet + i * (8 + 1);
-		addr = strtoul(packet, &separator, 16);
+		memcpy(bufferAddress, packet, 8 + 1);	
+		addr = strtoul(bufferAddress, &separator, 16);
 		retval = target_read_buffer(lws_target, addr, len, buffer);	  
 		if (retval != ERROR_OK) {
-			LOG_ERROR("lws failed to read buffer from a target at the addr(0x%8.8"PRIx32")!\n", addr);
+			LOG_ERROR("lws failed to read buffer from a target at the addr(0x%8.8"PRIx32")!", addr);
 			result = 1;
+			LOG_DEBUG("+++ openocd-nuvoton: TX packet %s, bufferAddress %s",
+				packet, bufferAddress);	
 			break;
 		}
 		if (i == 0) {
-			sprintf(&pss->buf[LWS_PRE], "%c%08x", commandCode, *buffer);		
+			sprintf(&pss->buf[LWS_PRE], "%c%08x", commandCode, le_to_h_u32(buffer));		
 		}
 		else {
-			sprintf(&pss->buf[LWS_PRE + i * (8 + 1)], ",%08x", *buffer);	
+			sprintf(&pss->buf[LWS_PRE + i * (8 + 1)], ",%08x", le_to_h_u32(buffer));	
 		}
-		LOG_DEBUG("+++ openocd-nuvoton: TX pss->buf[LWS_PRE + i * (8 + 1)] %s, pss->len %d, i %d, packet %s, *buffer %08X, addr: 0x%8.8"PRIx32", len: 0x%8.8"PRIx32"",
-			&pss->buf[LWS_PRE + i * (8 + 1)], pss->len, i, packet, *buffer, addr, len);	
+		LOG_DEBUG("+++ openocd-nuvoton: TX pss->buf[LWS_PRE] %s, pss->len %d, i %d, packet %s, bufferAddress %s, *buffer %08X, addr: 0x%8.8"PRIx32", len: 0x%8.8"PRIx32"",
+			&pss->buf[LWS_PRE], pss->len, i, packet, bufferAddress, le_to_h_u32(buffer), addr, len);	
 					
 		i = i + 1;		
-	} while (*separator == ',');
+		packet = packet + 8 + 1;			
+		bufferLen = bufferLen + 8 + 1;		
+	} while (bufferLen < pss->len);
 	
 	pss->tx += pss->len;
 	retval = lws_write(wsi, &pss->buf[LWS_PRE], pss->len, LWS_WRITE_TEXT);
@@ -115,8 +128,6 @@ static int lws_step_continue_halt_packet(struct lws *wsi, struct per_session_dat
 	uint32_t address = 0x0;
 	int retval = ERROR_OK, result = 0;
 
-	//LOG_DEBUG("-");
-
 	if (packet_size > 1) {
 		address = strtoul(packet + 1, NULL, 16);
 	}
@@ -125,16 +136,16 @@ static int lws_step_continue_halt_packet(struct lws *wsi, struct per_session_dat
 	}
 
 	if (packet[0] == 'c') {
-		LOG_DEBUG("+++ openocd-nuvoton: continue");
+		LOG_DEBUG("+++ openocd-nuvoton: TX continue");
 		/* resume at current address, don't handle breakpoints, not debugging */
 		retval = target_resume(lws_target, current, address, 0, 0);
 	} else if (packet[0] == 's') {
-		LOG_DEBUG("+++ openocd-nuvoton: step");
+		LOG_DEBUG("+++ openocd-nuvoton: TX step");
 		/* step at current or address, don't handle breakpoints */
 		retval = target_step(lws_target, current, address, 0);
 	}
 	else { 
-		LOG_DEBUG("+++ openocd-nuvoton: halt");
+		LOG_DEBUG("+++ openocd-nuvoton: TX halt");
 		retval = target_halt(lws_target);
 	}	
 	
@@ -154,6 +165,29 @@ static int lws_step_continue_halt_packet(struct lws *wsi, struct per_session_dat
 		result = 1;
 	}
 	
+	return result;
+}
+
+static int lws_query_packet(struct lws *wsi, struct per_session_data_nuvoton *pss, uint8_t const *packet, int packet_size)
+{
+	uint32_t len = 0;
+	int retval, result = 0;
+	uint8_t commandCode;
+	struct numicro_flash_bank *numicro_info = flash_banks->driver_priv;
+	
+	commandCode = *packet;
+	len = strlen(numicro_info->cpu->partname);
+	sprintf(&pss->buf[LWS_PRE], "%c%s", commandCode, numicro_info->cpu->partname);
+	LOG_DEBUG("+++ openocd-nuvoton: TX query for partname %s, len %d", numicro_info->cpu->partname, len);
+	// do not forget to add one for the first character of the commandCode	
+	len = len + 1;
+	pss->tx += len;
+	retval = lws_write(wsi, &pss->buf[LWS_PRE], len, LWS_WRITE_TEXT);
+	if (retval < 0) {
+		LOG_ERROR("ERROR %d writing to socket, hanging up", retval);
+		result = 1;
+	}
+		
 	return result;
 }
 
@@ -188,6 +222,9 @@ do_tx:
 			case 't':
 				result = lws_step_continue_halt_packet(wsi, pss, packet, pss->len);
 				break;				
+			case 'q':
+				result = lws_query_packet(wsi, pss, packet, pss->len);
+				break;					
 			default:
 				/* ignore unknown packets */
 				LOG_DEBUG("ignoring 0x%2.2x packet", packet[0]);

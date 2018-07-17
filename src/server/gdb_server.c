@@ -2,7 +2,7 @@
  *   Copyright (C) 2005 by Dominic Rath                                    *
  *   Dominic.Rath@gmx.de                                                   *
  *                                                                         *
- *   Copyright (C) 2007-2010 Øyvind Harboe                                 *
+ *   Copyright (C) 2007-2010 ?yvind Harboe                                 *
  *   oyvind.harboe@zylin.com                                               *
  *                                                                         *
  *   Copyright (C) 2008 by Spencer Oliver                                  *
@@ -48,6 +48,8 @@
 #include <jtag/jtag.h>
 #include "rtos/rtos.h"
 #include "target/smp.h"
+
+#define NUVOTON_CUSTOMIZED
 
 /**
  * @file
@@ -2450,7 +2452,10 @@ static int gdb_v_packet(struct connection *connection,
 			LOG_ERROR("incomplete vFlashErase packet received, dropping connection");
 			return ERROR_SERVER_REMOTE_CLOSED;
 		}
-
+#ifdef NUVOTON_CUSTOMIZED
+		gdb_put_packet(connection, "OK", 2);
+		return ERROR_OK;
+#endif		
 		/* assume all sectors need erasing - stops any problems
 		 * when flash_write is called multiple times */
 		flash_set_dirty();
@@ -2498,6 +2503,10 @@ static int gdb_v_packet(struct connection *connection,
 			LOG_ERROR("incomplete vFlashErase packet received, dropping connection");
 			return ERROR_SERVER_REMOTE_CLOSED;
 		}
+#ifdef NUVOTON_CUSTOMIZED		
+		gdb_put_packet(connection, "OK", 2);
+		return ERROR_OK;
+#endif		
 		length = packet_size - (parse - packet);
 
 		/* create a new image if there isn't already one */
@@ -2519,7 +2528,10 @@ static int gdb_v_packet(struct connection *connection,
 
 	if (strncmp(packet, "vFlashDone", 10) == 0) {
 		uint32_t written;
-
+#ifdef NUVOTON_CUSTOMIZED
+		gdb_put_packet(connection, "OK", 2);
+		return ERROR_OK;
+#endif		
 		/* process the flashing buffer. No need to erase as GDB
 		 * always issues a vFlashErase first. */
 		target_call_event_callbacks(gdb_service->target,
