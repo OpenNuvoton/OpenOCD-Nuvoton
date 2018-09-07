@@ -2,7 +2,7 @@
  *   Copyright (C) 2005 by Dominic Rath                                    *
  *   Dominic.Rath@gmx.de                                                   *
  *                                                                         *
- *   Copyright (C) 2007-2010 Øyvind Harboe                                 *
+ *   Copyright (C) 2007-2010 ?yvind Harboe                                 *
  *   oyvind.harboe@zylin.com                                               *
  *                                                                         *
  *   Copyright (C) 2008, Duane Ellis                                       *
@@ -1940,9 +1940,10 @@ int target_arch_state(struct target *target)
 		LOG_USER("No target has been configured");
 		return ERROR_OK;
 	}
-
+	if (!target->running_alg) {
 	LOG_USER("%s: target state: %s", target_name(target),
 		 target_state_name(target));
+	}
 
 	if (target->state != TARGET_HALTED)
 		return ERROR_OK;

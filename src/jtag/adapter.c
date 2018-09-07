@@ -2,7 +2,7 @@
  *   Copyright (C) 2005 by Dominic Rath                                    *
  *   Dominic.Rath@gmx.de                                                   *
  *                                                                         *
- *   Copyright (C) 2007-2010 Øyvind Harboe                                 *
+ *   Copyright (C) 2007-2010 ?yvind Harboe                                 *
  *   oyvind.harboe@zylin.com                                               *
  *                                                                         *
  *   Copyright (C) 2009 SoftPLC Corporation                                *
@@ -393,9 +393,9 @@ next:
 		modes[5] = "";
 	}
 
-	command_print(CMD_CTX, "%s %s%s%s%s%s",
-			modes[0], modes[1],
-			modes[2], modes[3], modes[4], modes[5]);
+	// command_print(CMD_CTX, "%s %s%s%s%s%s",
+			// modes[0], modes[1],
+			// modes[2], modes[3], modes[4], modes[5]);
 
 	return ERROR_OK;
 }
@@ -448,10 +448,10 @@ COMMAND_HANDLER(handle_adapter_khz_command)
 	if (ERROR_OK != retval)
 		return retval;
 
-	if (cur_speed)
-		command_print(CMD_CTX, "adapter speed: %d kHz", cur_speed);
-	else
-		command_print(CMD_CTX, "adapter speed: RCLK - adaptive");
+	// if (cur_speed)
+		// command_print(CMD_CTX, "adapter speed: %d kHz", cur_speed);
+	// else
+		// command_print(CMD_CTX, "adapter speed: RCLK - adaptive");
 
 	return retval;
 }

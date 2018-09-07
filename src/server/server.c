@@ -829,7 +829,7 @@ int server_init(struct command_context *cmd_ctx)
     };
     /* create lws context representing this server */
     context = lws_create_context(&context_info);
-	lwsl_notice("libwebsockets-openocd-nuvoton created context\n");	
+	LOG_DEBUG("libwebsockets-openocd-nuvoton created context");	
 	    if (context == NULL) {
         LOG_ERROR("lws init failed\n");
         return ERROR_FAIL;
@@ -846,7 +846,7 @@ int server_quit(void)
 	remove_services();
 #ifdef LWS_SERVER
 	lws_context_destroy(context);
-	lwsl_notice("libwebsockets-openocd-nuvoton exited cleanly\n");	
+	LOG_DEBUG("libwebsockets-openocd-nuvoton exited cleanly");	
 #endif
 	target_quit();
 

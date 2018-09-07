@@ -634,7 +634,7 @@ static int gdb_get_packet_inner(struct connection *connection,
 					}
 					break;
 				case '-':
-					LOG_WARNING("negative acknowledgment, but no packet pending");
+					LOG_DEBUG("negative acknowledgment, but no packet pending");
 					break;
 				case 0x3:
 					gdb_con->ctrl_c = 1;
@@ -2268,6 +2268,30 @@ error:
 	return retval;
 }
 
+static void rightShiftOneChar(char *s) {
+    int n = strlen(s);
+	
+    s[n + 1] = 0;
+    while(n){
+       s[n] = s[n - 1];
+       n--;
+    } 
+}
+
+static void insertOneBackSplashChar(char *s, char *targetChar) {
+	char *p;
+	
+	p = strchr(s, *targetChar);
+	do {		
+		if(p) {		
+			rightShiftOneChar(p);
+			*p = 92; // ASCII 92 means "/"
+			p = p + 2; // search for the next target character
+			p = strchr(p, *targetChar);
+		}			
+	} while(p);
+}
+
 static int gdb_query_packet(struct connection *connection,
 		char const *packet, int packet_size)
 {
@@ -2288,6 +2312,17 @@ static int gdb_query_packet(struct connection *connection,
 			/* some commands need to know the GDB connection, make note of current
 			 * GDB connection. */
 			current_gdb_connection = gdb_connection;
+			
+			if ((strstr(cmd, ".hex") || strstr(cmd, ".elf")) && 
+				(strstr(cmd, "[") || strstr(cmd, "]") || strstr(cmd, "?") || strstr(cmd, "*") || strstr(cmd, "$"))) {
+				insertOneBackSplashChar(cmd, "[");
+				insertOneBackSplashChar(cmd, "]");
+				insertOneBackSplashChar(cmd, "?");
+				insertOneBackSplashChar(cmd, "*");
+				insertOneBackSplashChar(cmd, "$");
+			}			
+			LOG_DEBUG("revised cmd: '%s'", cmd);
+			
 			command_run_line(cmd_ctx, cmd);
 			current_gdb_connection = NULL;
 			target_call_timer_callbacks_now();
