@@ -2047,6 +2047,41 @@ COMMAND_HANDLER(numicro_handle_chip_erase_command)
 	return ERROR_OK;
 }
 
+extern int nulink_usb_M2351_erase();
+COMMAND_HANDLER(numicro_handle_M2351_erase_command)
+{
+	int retval = ERROR_OK;
+	uint32_t rdat;
+
+	if (CMD_ARGC != 0)
+		return ERROR_COMMAND_SYNTAX_ERROR;
+
+	struct target *target = get_current_target(CMD_CTX);
+
+	numicro_get_arm_arch(target);
+	retval = numicro_init_isp(target);
+	if (retval != ERROR_OK)
+		return retval;
+	
+	retval = nulink_usb_M2351_erase();
+	if (retval != ERROR_OK) {
+		command_print(CMD_CTX, "numicro M2351_erase failed");
+		return retval;
+	}
+	
+	if ((m_flashInfo & NUMICRO_SPROM_MASK) != 0) {
+		LOG_DEBUG("SPROM is erasing");
+			
+		retval = numicro_fmc_cmd(target, ISPCMD_ERASE, NUMICRO_SPROM_BASE, NUMICRO_SPROM_ISPDAT, &rdat);
+		if (retval != ERROR_OK)
+			return retval;
+	}
+
+	command_print(CMD_CTX, "numicro M2351_erase complete");
+
+	return ERROR_OK;
+}
+
 static const struct command_registration numicro_exec_command_handlers[] = {
 	{
 		.name = "read_isp",
@@ -2075,6 +2110,12 @@ static const struct command_registration numicro_exec_command_handlers[] = {
 		.mode = COMMAND_EXEC,
 		.help = "chip erase through ISP.",
 	},
+	{
+		.name = "M2351_erase",
+		.handler = numicro_handle_M2351_erase_command,
+		.mode = COMMAND_EXEC,
+		.help = "M2351 erase through ISP.",
+	},	
 	COMMAND_REGISTRATION_DONE
 };
 

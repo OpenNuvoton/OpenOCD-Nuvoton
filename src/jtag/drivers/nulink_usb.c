@@ -73,7 +73,7 @@ struct nulink_usb_handle_s {
 	uint32_t max_mem_packet;
 	enum hl_transports transport;
 	uint16_t hardwareConfig; /* bit 0: 1:Nu-Link-Pro, 0:Normal Nu-Link | bit 1: 1:Nu-Link2, 0:Nu-Link */
-};
+} *m_nulink_usb_handle;
 
 struct nulink_usb_internal_api_s {
 	int (*nulink_usb_xfer) (void *handle, uint8_t *buf, int size);
@@ -90,7 +90,7 @@ struct nulink_usb_internal_api_s {
 #define CMD_MCU_STOP_RUN			0xD2UL
 #define CMD_MCU_FREE_RUN			0xD3UL
 #define CMD_SET_CONFIG				0xA2UL
-
+#define CMD_ERASE_FLASHCHIP                     0xA4UL
 #define ARM_SRAM_BASE				0x20000000
 
 #define HARDWARECONFIG_NULINKPRO    1
@@ -501,6 +501,67 @@ static int nulink_usb_reset(void *handle)
 
 	res = m_nulink_usb_api.nulink_usb_xfer(handle, h->databuf, 4 * 1);
 
+	return res;
+}
+
+int nulink_usb_M2351_erase()
+{
+	int res = ERROR_FAIL;
+	struct nulink_usb_handle_s *h = m_nulink_usb_handle;
+
+	LOG_DEBUG("nulink_usb_M2351_erase");
+
+	if (m_nulink_usb_handle != NULL) {
+		// SET_CONFIG for M2351
+		m_nulink_usb_api.nulink_usb_init_buffer(m_nulink_usb_handle, 4 * 6);
+		/* set command ID */
+		h_u32_to_le(h->cmdbuf + h->cmdidx, CMD_SET_CONFIG);
+		h->cmdidx += 4;
+		/* set max SWD clock */
+		h_u32_to_le(h->cmdbuf + h->cmdidx, 1000);
+		h->cmdidx += 4;
+		/* chip type: NUC_CHIP_TYPE_M2351 */
+		h_u32_to_le(h->cmdbuf + h->cmdidx, 0x321);
+		h->cmdidx += 4;
+		/* IO voltage */
+		h_u32_to_le(h->cmdbuf + h->cmdidx, 5000);
+		h->cmdidx += 4;
+		/* If supply voltage to target or not */
+		h_u32_to_le(h->cmdbuf + h->cmdidx, 0); 
+		h->cmdidx += 4;
+		/* USB_FUNC_E: USB_FUNC_HID_BULK */
+		h_u32_to_le(h->cmdbuf + h->cmdidx, 2);
+		h->cmdidx += 4;
+
+		m_nulink_usb_api.nulink_usb_xfer(m_nulink_usb_handle, h->databuf, 4 * 3);
+		
+		// Erase whole chip
+		m_nulink_usb_api.nulink_usb_init_buffer(m_nulink_usb_handle, 4 * 6);
+		/* set command ID */
+		h_u32_to_le(h->cmdbuf + h->cmdidx, CMD_ERASE_FLASHCHIP);
+		h->cmdidx += 4;
+		/* set count */
+		h_u32_to_le(h->cmdbuf + h->cmdidx, 0);
+		h->cmdidx += 4;
+		/* set config 0 */
+		h_u32_to_le(h->cmdbuf + h->cmdidx, 0xFFFFFFFF);
+		h->cmdidx += 4;
+		/* set config 1 */
+		h_u32_to_le(h->cmdbuf + h->cmdidx, 0xFFFFFFFF);
+		h->cmdidx += 4;
+		/* set config 2 */
+		h_u32_to_le(h->cmdbuf + h->cmdidx, 0xFFFFFFFF);
+		h->cmdidx += 4;
+		/* set config 3 */
+		h_u32_to_le(h->cmdbuf + h->cmdidx, 0xFFFFFFFF);
+		h->cmdidx += 4;
+
+		res = m_nulink_usb_api.nulink_usb_xfer(m_nulink_usb_handle, h->databuf, 4 * 1);	
+	}
+	else {
+		LOG_DEBUG("m_nulink_usb_handle not found");
+	}
+	
 	return res;
 }
 
@@ -1269,6 +1330,8 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 	LOG_DEBUG("nulink_usb_open");
 	char buf[512];
 
+	m_nulink_usb_handle = NULL;
+	
     struct stat fileStat;
 	err = stat("c:\\Program Files\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe", &fileStat);
 	LOG_DEBUG("Stat Case 1: %d", err);
@@ -1372,7 +1435,7 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 
 		jtag_libusb_set_configuration(h->fd, 0);
 
-		err = jtag_libusb_detach_kernel_driver(h->fd, 0);
+		err = jtag_libusb_detach_kernel_driver(h->fd, h->interface_num);
 		if (err != ERROR_OK) {
 			LOG_DEBUG("detach kernel driver failed(%d)", err);
 			//goto error_open;
@@ -1457,6 +1520,7 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 	LOG_DEBUG("max page size: %" PRIu32, h->max_mem_packet);
 
 	*fd = h;
+	m_nulink_usb_handle = h;
 
 	return ERROR_OK;
 
