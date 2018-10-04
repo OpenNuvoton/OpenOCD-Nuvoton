@@ -275,6 +275,19 @@ COMMAND_HANDLER(hl_interface_handle_close_command)
 		return hl_if.layout->api->close(hl_if.handle);
 }
 
+COMMAND_HANDLER(hl_interface_handle_reset_command)
+{
+	LOG_DEBUG("hl_interface_handle_reset_command");
+
+	if (CMD_ARGC != 0) {
+		LOG_ERROR("Do not need any argument");
+		return ERROR_COMMAND_SYNTAX_ERROR;
+	}
+
+	if (hl_if.layout->api->assert_srst)
+		return hl_if.layout->api->assert_srst(hl_if.handle, 0);
+}
+
 COMMAND_HANDLER(hl_interface_handle_vid_pid_command)
 {
 	LOG_DEBUG("hl_interface_handle_vid_pid_command");
@@ -371,6 +384,13 @@ static const struct command_registration hl_interface_command_handlers[] = {
 	 .help = "close hl interface",
 	 .usage = "",
 	},	
+	{
+	 .name = "hla_reset",
+	 .handler = &hl_interface_handle_reset_command,
+	 .mode = COMMAND_EXEC,
+	 .help = "reset hl interface",
+	 .usage = "",
+	},		
 	{
 	 .name = "hla_vid_pid",
 	 .handler = &hl_interface_handle_vid_pid_command,

@@ -145,7 +145,7 @@ struct numicro_cpu_type {
 
 static const struct numicro_cpu_type NuMicroParts[] = {
 	/*PART Name*//*PART ID*/ /*Banks*/
-	/* M051AN */
+	/* M031AN */
 	{"M031LE3AE", 0x01131E00, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 8*1024, 8)},
 	{"M031SE3AE", 0x01131E10, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 8*1024, 8)},
 	{"M032LE3AE", 0x01132E00, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 8*1024, 8)},
@@ -161,6 +161,7 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"M031FB0AE", 0x01131BB0, NUMICRO_BANKS_GENERAL(16*1024, 0*1024, 2*1024, 8)},
 	{"M031EB0AE", 0x01131BA0, NUMICRO_BANKS_GENERAL(16*1024, 0*1024, 2*1024, 8)},
 	{"M031TB0AE", 0x01131BE0, NUMICRO_BANKS_GENERAL(16*1024, 0*1024, 2*1024, 8)},
+	
 	/* M051AN */
 	{"M052LAN",  0x00005200, NUMICRO_BANKS_GENERAL(8*1024,  4*1024, 4*1024, 4)},
 	{"M054LAN",  0x00005400, NUMICRO_BANKS_GENERAL(16*1024, 4*1024, 4*1024, 4)},
@@ -662,6 +663,9 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"M487SGAAE", 0x00D48711, NUMICRO_BANKS_GENERAL(0x201000, 0*1024, 4*1024, 16)},
 	{"M480TEST", 0x00D480FF, NUMICRO_BANKS_GENERAL(0x201000, 0*1024, 4*1024, 16)},
 	
+	/* NUC505 */
+	{"NUC505", 0x00550505, NUMICRO_BANKS_GENERAL(0x1000000, 0*1024, 0*1024, 0)},
+	
 	/* M251 */
 	// { "", , NUMICRO_BANKS_GENERAL(192*1024, 0*1024, 4*1024, 12) },
 	// { "", , NUMICRO_BANKS_GENERAL(192*1024, 0*1024, 4*1024, 12) },
@@ -690,7 +694,7 @@ struct  numicro_flash_bank {
 /* Private variables */
 uint32_t m_pageSize = NUMICRO_PAGESIZE;
 uint32_t m_addressMinusOffset = 0;
-uint32_t m_M23SecureDebugState = 0; /* 0:Normal; 1:M23 and Secure Debug Enabled; 2:M23 and Secure Debug Disabled */
+uint32_t m_M23SecureDebugState = 0; /* 0:Normal; 1:M23 and Secure Debug Enabled; 2:M23 and Secure Debug Disabled (NS) */
 uint32_t m_flashInfo = 0; /* bit 0:SPROM exists; */
 char *m_target_name = "";
 
@@ -773,54 +777,6 @@ static int numicro_reg_unlock(struct target *target)
 		LOG_DEBUG("still protected!!");
 	}
 
-	return ERROR_OK;
-}
-
-static int numicro_init_isp(struct target *target)
-{
-	uint32_t reg_stat;
-	int retval = ERROR_OK;
-
-	if (target->state != TARGET_HALTED) {
-		LOG_ERROR("Target not halted");
-		return ERROR_TARGET_NOT_HALTED;
-	}
-
-	if (m_M23SecureDebugState == 2) {
-		LOG_DEBUG("numicro_init_isp skips since Secure invasive debug is prohibited.");
-		return ERROR_OK;
-	}
-
-	retval = numicro_reg_unlock(target);
-	if (retval != ERROR_OK)
-		return retval;
-
-	/* Enable ISP/SRAM/TICK Clock */
-	retval = target_read_u32(target, NUMICRO_SYSCLK_AHBCLK - m_addressMinusOffset, &reg_stat);
-	if (retval != ERROR_OK)
-		return retval;
-
-	reg_stat |= AHBCLK_ISP_EN | AHBCLK_SRAM_EN | AHBCLK_TICK_EN;
-	retval = target_write_u32(target, NUMICRO_SYSCLK_AHBCLK - m_addressMinusOffset, reg_stat);
-	if (retval != ERROR_OK)
-		return retval;
-
-	/* Enable ISP */
-	retval = target_read_u32(target, NUMICRO_FLASH_ISPCON - m_addressMinusOffset, &reg_stat);
-	if (retval != ERROR_OK)
-		return retval;
-
-	reg_stat |= ISPCON_ISPFF | ISPCON_LDUEN | ISPCON_APUEN | ISPCON_CFGUEN | ISPCON_ISPEN;
-	retval = target_write_u32(target, NUMICRO_FLASH_ISPCON - m_addressMinusOffset, reg_stat);
-	if (retval != ERROR_OK)
-		return retval;
-
-	/* Write one to undocumented flash control register */
-	retval = target_write_u32(target, NUMICRO_FLASH_CHEAT - m_addressMinusOffset, 1);
-	if (retval != ERROR_OK)
-		return retval;
-	
-	LOG_DEBUG("numicro_init_isp is done.");
 	return ERROR_OK;
 }
 
@@ -1100,7 +1056,7 @@ static const uint8_t numicro_M23_NS_init_info_code[] = {
 	0x01, 0xbd, 0x11, 0x7f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-static const uint32_t M481_AP_128_flash_write_code[] = {
+static const uint32_t numicro_M480_flash_algorithm_code[] = {
     0xE00ABE00, 0x062D780D, 0x24084068, 0xD3000040, 0x1E644058, 0x1C49D1FA, 0x2A001E52, 0x4770D1F2,
     0x4603b530, 0x2164460c, 0x4dfe2059, 0xf04f6028, 0xf04f0016, 0xf8c54580, 0xf04f0100, 0xf8c50088,
     0xf04f0100, 0xf8d04080, 0xf0100100, 0xd1010f01, 0xbd302001, 0x680048f4, 0x0004f040, 0x4580f04f,
@@ -1141,6 +1097,154 @@ static const uint32_t M481_AP_128_flash_write_code[] = {
     0x0f02f010, 0x2001d001, 0x2000e7f7, 0x0000e7f5, 0x4000c000, 0x00000000
 };
 
+static const uint32_t numicro_NUC505_flash_algorithm_code[] = {
+	0xE00ABE00, 0x062D780D, 0x24084068, 0xD3000040, 0x1E644058, 0x1C49D1FA, 0x2A001E52, 0x4770D1F2,
+    0x4770ba40, 0x4770bac0, 0x0030ea4f, 0x00004770, 0x684a49ab, 0x0210f022, 0x1000ea42, 0x47706048,
+    0x684a49a7, 0xd1fc07d2, 0x4207f44f, 0x6208600a, 0xf0406848, 0x60480001, 0x07c06848, 0x4770d1fc,
+    0x6841489f, 0xd1fc07c9, 0x61e0f44f, 0x68416001, 0x0101f041, 0x68416041, 0xd1fc07c9, 0xb2c06900,
+    0xb5004770, 0xf7ff2000, 0x2006ffd3, 0xffd8f7ff, 0xf85d2001, 0xe7cbeb04, 0x2000b500, 0xffc8f7ff,
+    0xf7ff2005, 0xf7ffffcd, 0x07c0ffdb, 0x2001d1fb, 0xeb04f85d, 0xb500e7bc, 0xf7ff4603, 0x2000ffe2,
+    0xffb6f7ff, 0xf7ff2020, 0xf3c3ffbb, 0xf7ff4007, 0xf3c3ffb7, 0xf7ff2007, 0xb2d8ffb3, 0xffb0f7ff,
+    0xf7ff2001, 0xf85dffa5, 0xe7d5eb04, 0xf7ffb500, 0x2000ffc8, 0xff9cf7ff, 0xf7ff20c7, 0x2001ffa1,
+    0xff96f7ff, 0xeb04f85d, 0xb570e7c6, 0x460e4615, 0xf7ff4604, 0x2000ffb6, 0xff8af7ff, 0x631c4b70,
+    0x639e635d, 0x7010f04f, 0x68586018, 0x0001f040, 0x68586058, 0xd1fc07c0, 0xf7ff2001, 0xe8bdff79,
+    0xe7a94070, 0x4604b570, 0x460e4615, 0xf7ff2000, 0x4b63ff6f, 0x635d631c, 0x02d8639e, 0x68586018,
+    0x0001f040, 0x68586058, 0xd1fc07c0, 0x4070e8bd, 0xe75d2001, 0x4603b500, 0xf7ff2000, 0x209fff59,
+    0xff5ef7ff, 0xff6cf7ff, 0xf7ff7098, 0x7058ff69, 0xff66f7ff, 0x20017018, 0xeb04f85d, 0xf04fe748,
+    0xf8d04080, 0xf0411204, 0xf8c00108, 0x494c1204, 0x6943684a, 0x020ff36f, 0x6380f443, 0x69436143,
+    0x6380f423, 0x68486143, 0x4310b280, 0x68486048, 0x0020f020, 0x0010f040, 0x47706048, 0x2300b578,
+    0x4180f04f, 0x68499300, 0xf0014d3e, 0x444d010f, 0xd0022907, 0xd0032906, 0x2101e030, 0xe0006069,
+    0x2a01606b, 0x6028d100, 0xffc9f7ff, 0x68704e34, 0xf0206869, 0xea4000c0, 0x60701081, 0xf7ff4668,
+    0x9800ffa9, 0x447ff06f, 0x407ff030, 0xd0019000, 0xd11442a0, 0xb1886868, 0x60681c40, 0xf0216871,
+    0xea4101c0, 0x60701080, 0xf7ff4668, 0x9800ff93, 0x407ff030, 0xd0019000, 0xd10042a0, 0xbd782001,
+    0xf7ffb500, 0x481eff9c, 0x4a1e6841, 0x01c0f021, 0x6852444a, 0x1182ea41, 0x20006041, 0x2001bd00,
+    0x49184770, 0x4449b500, 0x1a406809, 0xff13f7ff, 0xbd002000, 0x460a4613, 0xb5004912, 0x68094449,
+    0x46181a41, 0xff31f7ff, 0xbd002000, 0x4616b570, 0x460a460c, 0x46014605, 0x4448480b, 0xff42f7ff,
+    0x21004809, 0xe0064448, 0x5c735c42, 0xd001429a, 0xbd701868, 0x42a11c49, 0x1928d3f6, 0x0000bd70,
+    0x40007000, 0x00000004, 0x0000000c, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+};
+
+static int numicro_init_isp(struct target *target)
+{
+	struct working_area *init_algorithm;
+	struct reg_param reg_params[6];
+	struct armv7m_common *armv7m = target_to_armv7m(target);
+	struct armv7m_algorithm armv7m_info;
+	uint32_t algorithm_init_entry_offset = 0;
+	uint32_t algorithm_lr = 0;
+	int retval = ERROR_OK;
+	uint32_t reg_stat;
+
+	if (target->state != TARGET_HALTED) {
+		LOG_ERROR("Target not halted");
+		return ERROR_TARGET_NOT_HALTED;
+	}
+
+	if (m_M23SecureDebugState == 2) {
+		LOG_DEBUG("numicro_init_isp skips since Secure invasive debug is prohibited.");
+		return ERROR_OK;
+	}
+	
+	if (strcmp(m_target_name, "NUC505") == 0) {
+		algorithm_init_entry_offset = 0X1DD;
+		algorithm_lr = 0x20000001;
+
+		/* allocate working area with init info code */
+		if (target_alloc_working_area(target, sizeof(numicro_NUC505_flash_algorithm_code),
+			&init_algorithm) != ERROR_OK) {
+			LOG_WARNING("no working area available, can't do block memory erase");
+			return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
+		}
+
+		retval = target_write_buffer(target, init_algorithm->address,
+			sizeof(numicro_NUC505_flash_algorithm_code), numicro_NUC505_flash_algorithm_code);
+		if (retval != ERROR_OK)
+			return retval;
+
+		armv7m_info.common_magic = ARMV7M_COMMON_MAGIC;
+		armv7m_info.core_mode = ARM_MODE_THREAD;
+		if (armv7m == NULL) {
+			/* something is very wrong if armv7m is NULL */
+			LOG_ERROR("unable to get armv7m target");
+			return retval;
+		}
+
+		init_reg_param(&reg_params[0], "r0", 32, PARAM_OUT);    
+		init_reg_param(&reg_params[1], "r1", 32, PARAM_OUT);    
+		init_reg_param(&reg_params[2], "r2", 32, PARAM_OUT); 
+		init_reg_param(&reg_params[3], "r9", 32, PARAM_OUT);		
+		init_reg_param(&reg_params[4], "sp", 32, PARAM_OUT);    /* update SP */
+		init_reg_param(&reg_params[5], "lr", 32, PARAM_OUT);    /* update LR */
+		
+  			
+		/* use init info code within NuMicro */
+		buf_set_u32(reg_params[0].value, 0, 32, 0);
+		buf_set_u32(reg_params[1].value, 0, 32, 0);
+		buf_set_u32(reg_params[2].value, 0, 32, 0);
+		buf_set_u32(reg_params[3].value, 0, 32, 0x200002F0);
+		buf_set_u32(reg_params[4].value, 0, 32, init_algorithm->address + 126 * 1024);
+		buf_set_u32(reg_params[5].value, 0, 32, algorithm_lr);
+		
+
+		retval = target_run_algorithm(target, 0, NULL, 6, reg_params,
+			init_algorithm->address + algorithm_init_entry_offset, 0, 100000, &armv7m_info);
+		if (retval != ERROR_OK) {
+			LOG_ERROR("Error executing NuMicro init algorithm");
+			retval = ERROR_FLASH_OPERATION_FAILED;
+		}
+
+		target_free_working_area(target, init_algorithm);		
+		destroy_reg_param(&reg_params[0]);
+		destroy_reg_param(&reg_params[1]);
+		destroy_reg_param(&reg_params[2]);
+		destroy_reg_param(&reg_params[3]);	
+		destroy_reg_param(&reg_params[4]);
+		destroy_reg_param(&reg_params[5]);		
+	}
+	else {
+		retval = numicro_reg_unlock(target);
+		if (retval != ERROR_OK)
+			return retval;
+
+		/* Enable ISP/SRAM/TICK Clock */
+		retval = target_read_u32(target, NUMICRO_SYSCLK_AHBCLK - m_addressMinusOffset, &reg_stat);
+		if (retval != ERROR_OK)
+			return retval;
+
+		reg_stat |= AHBCLK_ISP_EN | AHBCLK_SRAM_EN | AHBCLK_TICK_EN;
+		retval = target_write_u32(target, NUMICRO_SYSCLK_AHBCLK - m_addressMinusOffset, reg_stat);
+		if (retval != ERROR_OK)
+			return retval;
+
+		/* Enable ISP */
+		retval = target_read_u32(target, NUMICRO_FLASH_ISPCON - m_addressMinusOffset, &reg_stat);
+		if (retval != ERROR_OK)
+			return retval;
+
+		reg_stat |= ISPCON_ISPFF | ISPCON_LDUEN | ISPCON_APUEN | ISPCON_CFGUEN | ISPCON_ISPEN;
+		retval = target_write_u32(target, NUMICRO_FLASH_ISPCON - m_addressMinusOffset, reg_stat);
+		if (retval != ERROR_OK)
+			return retval;
+
+		/* Write one to undocumented flash control register */
+		retval = target_write_u32(target, NUMICRO_FLASH_CHEAT - m_addressMinusOffset, 1);
+		if (retval != ERROR_OK)
+			return retval;
+	}
+	
+	LOG_DEBUG("numicro_init_isp is done.");
+	return ERROR_OK;
+}
+
+extern int nulink_usb_assert_reset();
 /* Program LongWord Block Write */
 static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 		uint32_t offset, uint32_t count)
@@ -1151,11 +1255,12 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 	struct working_area *write_algorithm;
 	struct working_area *source;
 	uint32_t address = bank->base + offset;
-	struct reg_param reg_params[5];
+	struct reg_param reg_params[6];
 	struct armv7m_common *armv7m = target_to_armv7m(target);
 	struct armv7m_algorithm armv7m_info;
 	uint32_t algorithm_programPage_entry_offset = 0;
-	uint32_t algorithm_lr = 0;	
+	uint32_t algorithm_lr = 0;
+	uint32_t status;
 	int retval = ERROR_OK;
 
 	/* Params:
@@ -1213,17 +1318,34 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			algorithm_lr = 0x20000001;
 
 			/* allocate working area with flash programming code */
-			if (target_alloc_working_area(target, sizeof(M481_AP_128_flash_write_code),
+			if (target_alloc_working_area(target, sizeof(numicro_M480_flash_algorithm_code),
 				&write_algorithm) != ERROR_OK) {
 				LOG_WARNING("no working area available, can't do block memory writes");
 				return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
 			}
 
 			retval = target_write_buffer(target, write_algorithm->address,
-				sizeof(M481_AP_128_flash_write_code), M481_AP_128_flash_write_code);
+				sizeof(numicro_M480_flash_algorithm_code), numicro_M480_flash_algorithm_code);
 			if (retval != ERROR_OK)
 				return retval;
-		}		
+		}
+		else if (strcmp(m_target_name, "NUC505") == 0) {
+			buffer_size = 256;
+			algorithm_programPage_entry_offset = 0x295;
+			algorithm_lr = 0x20000001;
+
+			/* allocate working area with flash programming code */
+			if (target_alloc_working_area(target, sizeof(numicro_NUC505_flash_algorithm_code),
+				&write_algorithm) != ERROR_OK) {
+				LOG_WARNING("no working area available, can't do block memory writes");
+				return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
+			}
+
+			retval = target_write_buffer(target, write_algorithm->address,
+				sizeof(numicro_NUC505_flash_algorithm_code), numicro_NUC505_flash_algorithm_code);
+			if (retval != ERROR_OK)
+				return retval;
+		}
 		else if (m_M23SecureDebugState != 2) {
 			/* allocate working area with flash programming code */
 			if (target_alloc_working_area(target, sizeof(numicro_M4_M23_flash_write_code),
@@ -1311,13 +1433,82 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 
 		target_free_working_area(target, source);
 		target_free_working_area(target, write_algorithm);
-
 		destroy_reg_param(&reg_params[0]);
 		destroy_reg_param(&reg_params[1]);
 		destroy_reg_param(&reg_params[2]);
 		destroy_reg_param(&reg_params[3]);
 		destroy_reg_param(&reg_params[4]);		
-	} 
+	}
+	else if (strcmp(m_target_name, "NUC505") == 0) {
+		init_reg_param(&reg_params[0], "r0", 32, PARAM_OUT);    /* faddr */
+		init_reg_param(&reg_params[1], "r1", 32, PARAM_OUT);    /* number of words to program */
+		init_reg_param(&reg_params[2], "r2", 32, PARAM_IN_OUT); /* *pLW (*buffer) */
+		init_reg_param(&reg_params[3], "r9", 32, PARAM_OUT);    		
+		init_reg_param(&reg_params[4], "sp", 32, PARAM_OUT);    /* update SP */
+		init_reg_param(&reg_params[5], "lr", 32, PARAM_OUT);    /* update LR */
+		
+		/* write code buffer and use flash programming code within numicro */
+		/* set breakpoint to 0 with time-out of 100000 ms                  */
+		while (count > 0) {
+			uint32_t thisrun_count = (count > (buffer_size / 4)) ? (buffer_size / 4) : count;
+
+			retval = target_write_buffer(target, source->address, thisrun_count * 4, buffer);
+			if (retval != ERROR_OK)
+				break;
+
+			buf_set_u32(reg_params[0].value, 0, 32, address & NUMICRO_TZ_MASK);
+			buf_set_u32(reg_params[1].value, 0, 32, thisrun_count * 4);
+			buf_set_u32(reg_params[2].value, 0, 32, source->address);
+			buf_set_u32(reg_params[3].value, 0, 32, 0x200002F0);			
+			buf_set_u32(reg_params[4].value, 0, 32, write_algorithm->address + 126 * 1024);	
+			buf_set_u32(reg_params[5].value, 0, 32, algorithm_lr);				
+
+			retval = target_run_algorithm(target, 0, NULL, 6, reg_params,
+					write_algorithm->address + algorithm_programPage_entry_offset, 0, 100000, &armv7m_info);
+			if (retval != ERROR_OK) {
+				LOG_ERROR("Error executing NuMicro Flash programming algorithm");
+				retval = ERROR_FLASH_OPERATION_FAILED;
+				break;
+			}
+
+			buffer  += thisrun_count * 4;
+			address += thisrun_count * 4;
+			count   -= thisrun_count;
+			LOG_INFO("Have written %d%%", (totalCount - count) * 100 / totalCount);
+		}
+
+		// uninit		
+		algorithm_programPage_entry_offset = 0x261;
+		algorithm_lr = 0x20000001;
+		
+		buf_set_u32(reg_params[0].value, 0, 32, 0);
+		buf_set_u32(reg_params[1].value, 0, 32, 0);
+		buf_set_u32(reg_params[2].value, 0, 32, 0);
+		buf_set_u32(reg_params[3].value, 0, 32, 0x200002F0);			
+		buf_set_u32(reg_params[4].value, 0, 32, write_algorithm->address + 126 * 1024);	
+		buf_set_u32(reg_params[5].value, 0, 32, algorithm_lr);				
+
+		retval = target_run_algorithm(target, 0, NULL, 6, reg_params,
+					write_algorithm->address + algorithm_programPage_entry_offset, 0, 100000, &armv7m_info);
+		if (retval != ERROR_OK) {
+			LOG_ERROR("Error executing NuMicro Flash programming algorithm");
+			retval = ERROR_FLASH_OPERATION_FAILED;
+		}
+		
+		target_free_working_area(target, source);
+		target_free_working_area(target, write_algorithm);
+		destroy_reg_param(&reg_params[0]);
+		destroy_reg_param(&reg_params[1]);
+		destroy_reg_param(&reg_params[2]);
+		destroy_reg_param(&reg_params[3]);
+		destroy_reg_param(&reg_params[4]);		
+		destroy_reg_param(&reg_params[5]);	
+
+		/* chip reset */
+		target_write_u32(target, 0x40000008, 0x2);		
+		/* wait for NUC505 IBR operations */
+		Sleep(50);
+	}	
 	else {
 		init_reg_param(&reg_params[0], "r0", 32, PARAM_IN_OUT); /* *pLW (*buffer) */
 		init_reg_param(&reg_params[1], "r1", 32, PARAM_OUT);    /* faddr */
@@ -1354,88 +1545,12 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 
 		target_free_working_area(target, source);
 		target_free_working_area(target, write_algorithm);
-
 		destroy_reg_param(&reg_params[0]);
 		destroy_reg_param(&reg_params[1]);
 		destroy_reg_param(&reg_params[2]);
 		destroy_reg_param(&reg_params[3]);
 	}
-
-	return retval;
-}
-
-static int numicro_eraseblock_ns(struct flash_bank *bank, int first, int last)
-{
-	struct target *target = bank->target;
-	struct working_area *erase_algorithm;
-	uint32_t address;
-	struct reg_param reg_params[2];
-	struct armv7m_common *armv7m = target_to_armv7m(target);
-	struct armv7m_algorithm armv7m_info;
-	int i, retval = ERROR_OK;
-
-	/* Params:
-	* r0 - target address
-	*/
-
-	if (m_M23SecureDebugState != 2) {
-		LOG_DEBUG("Error executing NuMicro Flash erase algorithm because it is only used for M23 NS.");
-		retval = ERROR_FLASH_OPERATION_FAILED;
-
-		return retval;
-	}
-
-	/* allocate working area with flash erase code */
-	if (target_alloc_working_area(target, sizeof(numicro_M23_NS_flash_erase_code),
-		&erase_algorithm) != ERROR_OK) {
-		LOG_WARNING("no working area available, can't do block memory erase");
-		return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
-	}
-
-	retval = target_write_buffer(target, erase_algorithm->address,
-		sizeof(numicro_M23_NS_flash_erase_code), numicro_M23_NS_flash_erase_code);
-	if (retval != ERROR_OK)
-		return retval;
-
-	armv7m_info.common_magic = ARMV7M_COMMON_MAGIC;
-	armv7m_info.core_mode = ARM_MODE_THREAD;
-	if (armv7m == NULL) {
-		/* something is very wrong if armv7m is NULL */
-		LOG_ERROR("unable to get armv7m target");
-		return retval;
-	}
-
-	init_reg_param(&reg_params[0], "r0", 32, PARAM_OUT);    /* faddr */
-	init_reg_param(&reg_params[1], "sp", 32, PARAM_OUT);    /* update SP */
-
-	/* use Flash erase code within NuMicro            */
-	/* set breakpoint to 0 with time-out of 100000 ms */
-	for (i = first; i <= last; i++) {
-		if (bank->sectors[i].is_erased == 1) {
-			LOG_DEBUG("sector %d has been erased recently. Skip to the next sector.", i);
-			continue;
-		}
-
-		address = (bank->base + bank->sectors[i].offset) /* & NUMICRO_TZ_MASK */;
-		buf_set_u32(reg_params[0].value, 0, 32, address);
-		buf_set_u32(reg_params[1].value, 0, 32, erase_algorithm->address + target->working_area_size);
-
-		retval = target_run_algorithm(target, 0, NULL, 2, reg_params,
-			erase_algorithm->address, 0, 100000, &armv7m_info);
-		if (retval != ERROR_OK) {
-			LOG_ERROR("Error executing NuMicro Flash erase algorithm");
-			retval = ERROR_FLASH_OPERATION_FAILED;
-			break;
-		}
-		else {
-			bank->sectors[i].is_erased = 1;
-		}
-	}
-
-	target_free_working_area(target, erase_algorithm);
-	destroy_reg_param(&reg_params[0]);
-	destroy_reg_param(&reg_params[1]);
-
+	
 	return retval;
 }
 
@@ -1563,9 +1678,15 @@ static int numicro_protect_check(struct flash_bank *bank)
 static int numicro_erase(struct flash_bank *bank, int first, int last)
 {
 	struct target *target = bank->target;
-	uint32_t timeout, status;
+	struct working_area *erase_algorithm;
 	uint32_t address;
+	struct reg_param reg_params[4];
+	struct armv7m_common *armv7m = target_to_armv7m(target);
+	struct armv7m_algorithm armv7m_info;
+	uint32_t algorithm_erasePage_entry_offset = 0;
+	uint32_t algorithm_lr = 0;	
 	int i, retval = ERROR_OK;
+	uint32_t timeout, status;
 
 	if (target->state != TARGET_HALTED) {
 		LOG_ERROR("Target not halted");
@@ -1579,7 +1700,84 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 	if (retval != ERROR_OK)
 		return retval;
 
-	if (m_M23SecureDebugState != 2) {
+	if (strcmp(m_target_name, "NUC505") == 0) { 
+		algorithm_erasePage_entry_offset = 0x283;
+		algorithm_lr = 0x20000001;
+		
+		/* allocate working area with flash erase code */
+		if (target_alloc_working_area(target, sizeof(numicro_NUC505_flash_algorithm_code),
+			&erase_algorithm) != ERROR_OK) {
+			LOG_WARNING("no working area available, can't do block memory erase");
+			return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
+		}
+
+		retval = target_write_buffer(target, erase_algorithm->address,
+			sizeof(numicro_NUC505_flash_algorithm_code), numicro_NUC505_flash_algorithm_code);
+		if (retval != ERROR_OK)
+			return retval;
+
+		armv7m_info.common_magic = ARMV7M_COMMON_MAGIC;
+		armv7m_info.core_mode = ARM_MODE_THREAD;
+		if (armv7m == NULL) {
+			/* something is very wrong if armv7m is NULL */
+			LOG_ERROR("unable to get armv7m target");
+			return retval;
+		}
+
+		init_reg_param(&reg_params[0], "r0", 32, PARAM_OUT);    /* faddr */
+		init_reg_param(&reg_params[1], "r9", 32, PARAM_OUT);    
+		init_reg_param(&reg_params[2], "sp", 32, PARAM_OUT);    /* update SP */
+		init_reg_param(&reg_params[3], "lr", 32, PARAM_OUT);    		
+
+		/* use Flash erase code within NuMicro            */
+		/* set breakpoint to 0 with time-out of 100000 ms */
+		for (i = first; i <= last; i++) {
+			if (bank->sectors[i].is_erased == 1) {
+				LOG_DEBUG("sector %d has been erased recently. Skip to the next sector.", i);
+				continue;
+			}
+
+			address = (bank->base + bank->sectors[i].offset) /* & NUMICRO_TZ_MASK */;
+			buf_set_u32(reg_params[0].value, 0, 32, address);
+			buf_set_u32(reg_params[1].value, 0, 32, 0x200002F0);			
+			buf_set_u32(reg_params[2].value, 0, 32, erase_algorithm->address + 126 * 1024);
+			buf_set_u32(reg_params[3].value, 0, 32, algorithm_lr);
+
+			retval = target_run_algorithm(target, 0, NULL, 4, reg_params,
+				erase_algorithm->address + algorithm_erasePage_entry_offset, 0, 100000, &armv7m_info);
+			if (retval != ERROR_OK) {
+				LOG_ERROR("Error executing NuMicro Flash erase algorithm");
+				retval = ERROR_FLASH_OPERATION_FAILED;
+				break;
+			}
+			else {
+				bank->sectors[i].is_erased = 1;
+			}
+		}
+
+		// uninit		
+		algorithm_erasePage_entry_offset = 0x261;
+		algorithm_lr = 0x20000001;
+		
+		buf_set_u32(reg_params[0].value, 0, 32, 0);
+		buf_set_u32(reg_params[1].value, 0, 32, 0x200002F0);			
+		buf_set_u32(reg_params[2].value, 0, 32, erase_algorithm->address + 126 * 1024);	
+		buf_set_u32(reg_params[3].value, 0, 32, algorithm_lr);				
+
+		retval = target_run_algorithm(target, 0, NULL, 4, reg_params,
+					erase_algorithm->address + algorithm_erasePage_entry_offset, 0, 100000, &armv7m_info);
+		if (retval != ERROR_OK) {
+			LOG_ERROR("Error executing NuMicro Flash programming algorithm");
+			retval = ERROR_FLASH_OPERATION_FAILED;
+		}
+		
+		target_free_working_area(target, erase_algorithm);
+		destroy_reg_param(&reg_params[0]);
+		destroy_reg_param(&reg_params[1]);
+		destroy_reg_param(&reg_params[2]);
+		destroy_reg_param(&reg_params[3]);		
+	}
+	else if (m_M23SecureDebugState != 2) {
 		retval = target_write_u32(target, NUMICRO_FLASH_ISPCMD - m_addressMinusOffset, ISPCMD_ERASE);
 		if (retval != ERROR_OK)
 			return retval;
@@ -1645,8 +1843,57 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 			}
 		}
 	}
-	else {
-		numicro_eraseblock_ns(bank, first, last);
+	else { // m_M23SecureDebugState == 2
+		/* allocate working area with flash erase code */
+		if (target_alloc_working_area(target, sizeof(numicro_M23_NS_flash_erase_code),
+			&erase_algorithm) != ERROR_OK) {
+			LOG_WARNING("no working area available, can't do block memory erase");
+			return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
+		}
+
+		retval = target_write_buffer(target, erase_algorithm->address,
+			sizeof(numicro_M23_NS_flash_erase_code), numicro_M23_NS_flash_erase_code);
+		if (retval != ERROR_OK)
+			return retval;
+
+		armv7m_info.common_magic = ARMV7M_COMMON_MAGIC;
+		armv7m_info.core_mode = ARM_MODE_THREAD;
+		if (armv7m == NULL) {
+			/* something is very wrong if armv7m is NULL */
+			LOG_ERROR("unable to get armv7m target");
+			return retval;
+		}
+
+		init_reg_param(&reg_params[0], "r0", 32, PARAM_OUT);    /* faddr */
+		init_reg_param(&reg_params[1], "sp", 32, PARAM_OUT);    /* update SP */
+
+		/* use Flash erase code within NuMicro            */
+		/* set breakpoint to 0 with time-out of 100000 ms */
+		for (i = first; i <= last; i++) {
+			if (bank->sectors[i].is_erased == 1) {
+				LOG_DEBUG("sector %d has been erased recently. Skip to the next sector.", i);
+				continue;
+			}
+
+			address = (bank->base + bank->sectors[i].offset) /* & NUMICRO_TZ_MASK */;
+			buf_set_u32(reg_params[0].value, 0, 32, address);
+			buf_set_u32(reg_params[1].value, 0, 32, erase_algorithm->address + target->working_area_size);
+
+			retval = target_run_algorithm(target, 0, NULL, 2, reg_params,
+				erase_algorithm->address, 0, 100000, &armv7m_info);
+			if (retval != ERROR_OK) {
+				LOG_ERROR("Error executing NuMicro Flash erase algorithm");
+				retval = ERROR_FLASH_OPERATION_FAILED;
+				break;
+			}
+			else {
+				bank->sectors[i].is_erased = 1;
+			}
+		}
+
+		target_free_working_area(target, erase_algorithm);
+		destroy_reg_param(&reg_params[0]);
+		destroy_reg_param(&reg_params[1]);
 	}
 
 	/* done */
@@ -1856,6 +2103,9 @@ static int numicro_probe(struct flash_bank *bank)
 		if ((cpu->partid & 0x00FFF000) == 0x00D48000) {
 			m_pageSize = NUMICRO_PAGESIZE * 8; /* for M480 */
 		}
+		else if (cpu->partid == 0x00550505) {
+			m_pageSize = 0x1000; /* for NUC505 */
+		}		
 		else {
 			m_pageSize = NUMICRO_PAGESIZE * 4;
 		}
@@ -1876,13 +2126,16 @@ static int numicro_probe(struct flash_bank *bank)
 	}
 	
 	/* decide the target name */
-	if (((cpu->partid & 0x00FFF000) == 0x00D48000/* M480   */)) {
+	if (((cpu->partid & 0x00FFF000) == 0x00D48000)) {
 		m_target_name = "M480";
+	}
+	else if (cpu->partid == 0x00550505) {
+		m_target_name = "NUC505";
 	}
 	else {
 		m_target_name = "common";
 	}
-	//m_target_name = "common";
+	LOG_DEBUG("target name: %s", m_target_name);
 	
 	num_pages = flash_size / m_pageSize;
 	bank->num_sectors = num_pages;
@@ -1955,7 +2208,7 @@ COMMAND_HANDLER(numicro_handle_read_isp_command)
 	if (retval != ERROR_OK)
 		return retval;
 
-	LOG_INFO("0x%08" PRIx32 ": 0x%08" PRIx32, address, ispdat);
+	LOG_INFO("numicro read_isp 0x%08" PRIx32 " 0x%08" PRIx32, address, ispdat);
 
 	return ERROR_OK;
 }
@@ -1983,7 +2236,7 @@ COMMAND_HANDLER(numicro_handle_write_isp_command)
 	if (retval != ERROR_OK)
 		return retval;
 
-	LOG_INFO("0x%08" PRIx32 ": 0x%08" PRIx32, address, ispdat);
+	LOG_INFO("numicro write_isp 0x%08" PRIx32 " 0x%08" PRIx32, address, ispdat);
 	return ERROR_OK;
 }
 
@@ -2009,7 +2262,7 @@ COMMAND_HANDLER(numicro_handle_erase_isp_command)
 	if (retval != ERROR_OK)
 		return retval;
 
-	LOG_INFO("0x%08" PRIx32 ": 0x%08" PRIx32, address, ispdat);
+	LOG_INFO("numicro erase_isp 0x%08" PRIx32 " 0x%08" PRIx32, address, ispdat);
 
 	return ERROR_OK;
 }
@@ -2034,9 +2287,9 @@ COMMAND_HANDLER(numicro_handle_chip_erase_command)
 		command_print(CMD_CTX, "numicro chip_erase failed");
 		return retval;
 	}
-
+	
 	if ((m_flashInfo & NUMICRO_SPROM_MASK) != 0) {
-		LOG_DEBUG("SPROM is erasing");
+		LOG_DEBUG("SPROM is erasing");			
 		retval = numicro_fmc_cmd(target, ISPCMD_ERASE, NUMICRO_SPROM_BASE, NUMICRO_SPROM_ISPDAT, &rdat);
 		if (retval != ERROR_OK)
 			return retval;
@@ -2082,6 +2335,33 @@ COMMAND_HANDLER(numicro_handle_M2351_erase_command)
 	return ERROR_OK;
 }
 
+COMMAND_HANDLER(numicro_handle_NUC505_sram_ini_command)
+{
+	unsigned long address = 0, length = 0;
+	int retval = ERROR_OK;
+	uint32_t rdat;
+
+	if (CMD_ARGC != 2)
+		return ERROR_COMMAND_SYNTAX_ERROR;
+
+	struct target *target = get_current_target(CMD_CTX);
+	
+	COMMAND_PARSE_NUMBER(ulong, CMD_ARGV[0], address);
+	COMMAND_PARSE_NUMBER(ulong, CMD_ARGV[1], length);
+
+	target_write_u32(target, 0x40000050, address);		
+	target_write_u32(target, 0x40000054, length);		
+	target_write_u32(target, 0x4000005C, 0x00000001);	
+	/* cpu reset */
+	target_write_u32(target, 0x40000008, 0x00000001);	
+	/* wait for NUC505 IBR operations */
+	Sleep(50);
+	
+	command_print(CMD_CTX, "numicro NUC505_sram_ini complete");
+
+	return ERROR_OK;
+}
+
 static const struct command_registration numicro_exec_command_handlers[] = {
 	{
 		.name = "read_isp",
@@ -2114,7 +2394,13 @@ static const struct command_registration numicro_exec_command_handlers[] = {
 		.name = "M2351_erase",
 		.handler = numicro_handle_M2351_erase_command,
 		.mode = COMMAND_EXEC,
-		.help = "M2351 erase through ISP.",
+		.help = "M2351 erase command.",
+	},	
+	{
+		.name = "NUC505_sram_ini",
+		.handler = numicro_handle_NUC505_sram_ini_command,
+		.mode = COMMAND_EXEC,
+		.help = "NUC505 sram initialization command.",
 	},	
 	COMMAND_REGISTRATION_DONE
 };
