@@ -153,7 +153,7 @@ double GetTickCount(void)
 #endif
 
 static void nulink_usb_init_buffer(void *handle, uint32_t size);
-static void nulink_usb_init_buffer2(void *handle, uint32_t size);
+//static void nulink_usb_init_buffer2(void *handle, uint32_t size);
 
 static int nulink_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 {
@@ -825,6 +825,10 @@ static int nulink_usb_read_mem8(void *handle, uint32_t addr, uint16_t len,
 				memcpy(buffer + 2 * 1, h->databuf + 4 * (2 * 1 + 1), len - 2);
 		}
 
+		// LOG_DEBUG("NULINK read_ram8(0x%08x): 0x%08x",
+			// addr - 4,
+			// le_to_h_u32(buffer));
+		
 		if (len >= bytes_remaining)
 			len -= bytes_remaining;
 		else
@@ -929,7 +933,7 @@ static int nulink_usb_write_mem8(void *handle, uint32_t addr, uint16_t len,
 			}
 			h->cmdidx += 4;
 
-			//LOG_DEBUG("NULINK write_ram(0x%08x): 0x%04x",
+			// LOG_DEBUG("NULINK write_ram8(0x%08x): 0x%04x",
 			//	addr,
 			//	u32bufferData);
 
