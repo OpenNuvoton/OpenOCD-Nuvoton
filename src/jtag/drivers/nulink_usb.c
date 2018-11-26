@@ -153,7 +153,6 @@ double GetTickCount(void)
 #endif
 
 static void nulink_usb_init_buffer(void *handle, uint32_t size);
-//static void nulink_usb_init_buffer2(void *handle, uint32_t size);
 
 static int nulink_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 {
@@ -1314,7 +1313,7 @@ static int nulink_speed(void *handle, int khz, bool query)
 				);
 		}		
 		/* wait for NUC505 IBR operations */
-		Sleep(50);
+		busy_sleep(50);
 	}
 
 	return max_ice_clock;

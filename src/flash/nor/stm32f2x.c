@@ -5,7 +5,7 @@
  *   Copyright (C) 2008 by Spencer Oliver                                  *
  *   spen@spen-soft.co.uk                                                  *
  *                                                                         *
- *   Copyright (C) 2011 Øyvind Harboe                                      *
+ *   Copyright (C) 2011 ?yvind Harboe                                      *
  *   oyvind.harboe@zylin.com                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -720,9 +720,9 @@ static int stm32x_write(struct flash_bank *bank, const uint8_t *buffer,
 	2. Set the PG bit in the FLASH_CR register
 	3. Perform the data write operation(s) to the desired memory address (inside main
 	  memory block or OTP area):
-	– – Half-word access in case of x16 parallelism
-	– Word access in case of x32 parallelism
-	–
+	????Half-word access in case of x16 parallelism
+	??Word access in case of x32 parallelism
+	??
 	4.
 	Byte access in case of x8 parallelism
 	Double word access in case of x64 parallelism
