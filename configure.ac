@@ -633,6 +633,12 @@ if test $is_win32 = yes; then
     AC_DEFINE([WIN32_LEAN_AND_MEAN], [1], [1 to exclude old conflicting definitions when building on Windows])
 fi
 
+if test $is_win32 = yes; then
+    AC_DEFINE([NUVOTON_CUSTOMIZED], [0], [1 to enable Nuvoton customized features on Windows])
+else
+    AC_DEFINE([NUVOTON_CUSTOMIZED], [0], [1 to enable Nuvoton customized features])
+fi
+
 if test $build_parport = yes; then
   build_bitbang=yes
   AC_DEFINE([BUILD_PARPORT], [1], [1 if you want parport.])

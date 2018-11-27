@@ -159,7 +159,7 @@ static int nulink_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 	struct nulink_usb_handle_s *h = handle;
 	int startTime = GetTickCount(), cmdID;
 	assert(handle != NULL);
-#ifdef _WIN32	
+#if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 	jtag_libusb_nuvoton_mutex_lock();
 #endif
 	jtag_libusb_interrupt_write(h->fd, h->tx_ep, (char *)h->cmdbuf, NULINK_HID_MAX_SIZE,
@@ -184,7 +184,7 @@ static int nulink_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 			(cmdsize != buf[1]) ||
 			(cmdID != 0xff && cmdID != CMD_WRITE_REG && cmdID != CMD_WRITE_RAM && 
 			 cmdID != CMD_CHECK_MCU_STOP  && cmdID != buf[2]));
-#ifdef _WIN32
+#if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 	jtag_libusb_nuvoton_mutex_unlock();
 #endif			
 	return ERROR_OK;
@@ -195,7 +195,7 @@ static int nulink2_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 	struct nulink_usb_handle_s *h = handle;
 	int startTime = GetTickCount(), cmdID;
 	assert(handle != NULL);
-#ifdef _WIN32	
+#if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 	jtag_libusb_nuvoton_mutex_lock();
 #endif
 	jtag_libusb_interrupt_write(h->fd, h->tx_ep, (char *)h->cmdbuf, NULINK2_HID_MAX_SIZE,
@@ -220,7 +220,7 @@ static int nulink2_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 			(cmdsize != (((int)buf[1]) << 8) + ((int)buf[2] & 0xFF)) ||
 			(cmdID != 0xff && cmdID != CMD_WRITE_REG && cmdID != CMD_WRITE_RAM && 
 			 cmdID != CMD_CHECK_MCU_STOP && cmdID != buf[3]));
-#ifdef _WIN32
+#if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 	jtag_libusb_nuvoton_mutex_unlock();
 #endif			
 	return ERROR_OK;

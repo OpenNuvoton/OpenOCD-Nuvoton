@@ -49,8 +49,6 @@
 #include "rtos/rtos.h"
 #include "target/smp.h"
 
-#define NUVOTON_CUSTOMIZED
-
 /**
  * @file
  * GDB server implementation.
@@ -2487,7 +2485,7 @@ static int gdb_v_packet(struct connection *connection,
 			LOG_ERROR("incomplete vFlashErase packet received, dropping connection");
 			return ERROR_SERVER_REMOTE_CLOSED;
 		}
-#ifdef NUVOTON_CUSTOMIZED
+#if (NUVOTON_CUSTOMIZED)
 		gdb_put_packet(connection, "OK", 2);
 		return ERROR_OK;
 #endif		
@@ -2538,7 +2536,7 @@ static int gdb_v_packet(struct connection *connection,
 			LOG_ERROR("incomplete vFlashErase packet received, dropping connection");
 			return ERROR_SERVER_REMOTE_CLOSED;
 		}
-#ifdef NUVOTON_CUSTOMIZED		
+#if (NUVOTON_CUSTOMIZED)		
 		gdb_put_packet(connection, "OK", 2);
 		return ERROR_OK;
 #endif		
@@ -2563,7 +2561,7 @@ static int gdb_v_packet(struct connection *connection,
 
 	if (strncmp(packet, "vFlashDone", 10) == 0) {
 		uint32_t written;
-#ifdef NUVOTON_CUSTOMIZED
+#if (NUVOTON_CUSTOMIZED)
 		gdb_put_packet(connection, "OK", 2);
 		return ERROR_OK;
 #endif		

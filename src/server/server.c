@@ -44,8 +44,7 @@
 #include <netinet/tcp.h>
 #endif
 
-#define LWS_SERVER
-#ifdef LWS_SERVER
+#if (NUVOTON_CUSTOMIZED)
 #include "libwebsockets.h"
 #include <flash/nor/core.h>
 #include <flash/nor/core.c>
@@ -740,7 +739,7 @@ int server_loop(struct command_context *command_context)
 				}
 			}
 		}
-#ifdef LWS_SERVER
+#if (NUVOTON_CUSTOMIZED)
 		if (lws_service(context, 10) < 0) {
 			shutdown_openocd = 1;
 		}
@@ -807,7 +806,7 @@ int server_init(struct command_context *cmd_ctx)
 	int ret = tcl_init();
 	if (ERROR_OK != ret)
 		return ret;
-#ifdef LWS_SERVER
+#if (NUVOTON_CUSTOMIZED)
 	/* web server url will be http://localhost:5555 */
     int port = 5555;
     struct lws_context_creation_info context_info =
@@ -844,7 +843,7 @@ int server_init(struct command_context *cmd_ctx)
 int server_quit(void)
 {
 	remove_services();
-#ifdef LWS_SERVER
+#if (NUVOTON_CUSTOMIZED)
 	lws_context_destroy(context);
 	LOG_DEBUG("libwebsockets-openocd-nuvoton exited cleanly");	
 #endif

@@ -86,7 +86,7 @@ int jtag_libusb_choose_interface(struct jtag_libusb_device_handle *devh,
 		unsigned int *usb_write_ep,
 		int bclass, int subclass, int protocol);
 int jtag_libusb_get_pid(struct jtag_libusb_device *dev, uint16_t *pid);
-#ifdef _WIN32
+#if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 int jtag_libusb_nuvoton_mutex_lock(void);
 int jtag_libusb_nuvoton_mutex_unlock(void);
 #endif

@@ -266,7 +266,7 @@ int jtag_libusb_get_pid(struct jtag_libusb_device *dev, uint16_t *pid)
 
 	return ERROR_FAIL;
 }
-#ifdef _WIN32
+#if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 int jtag_libusb_nuvoton_mutex_lock()
 {
 	return libusb_nuvoton_mutex_lock();
