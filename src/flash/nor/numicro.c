@@ -1375,12 +1375,12 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 
 	/* Increase buffer_size if needed */
 	if (buffer_size == 1024 /*&& buffer_size < ((target->working_area_size - write_algorithm->size)/2)*/) {
-		buffer_size = (target->working_area_size - write_algorithm->size)/2;
+		buffer_size = (target->working_area_size - write_algorithm->size - 512) / 2; /* 512 bytes for stack */
 	
 		if (buffer_size & 0x1)
 			buffer_size = buffer_size - 1;
 		
-		buffer_size = buffer_size - 10;
+		buffer_size = buffer_size - 10; /* buffer for alignment */
 	}
 
 	/* memory buffer */
