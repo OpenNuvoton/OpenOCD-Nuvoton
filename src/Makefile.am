@@ -30,7 +30,9 @@ if ULINK
 openocd_LDADD += -lm
 endif
 
-openocd_LDADD += -lwebsockets_static -lssl.dll -lcrypto.dll -lws2_32
+if IS_WIN32
+#openocd_LDADD += -lwebsockets_static -lssl.dll -lcrypto.dll -lws2_32
+endif
 
 libopenocd_la_SOURCES = \
 	hello.c \
