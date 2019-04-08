@@ -103,7 +103,6 @@ enum PROCESSOR_STATE_E {
 	PROCESSOR_POWER_DOWN
 };
 
-
 enum RESET_E
 {
 		RESET_AUTO			= 0,
@@ -1183,12 +1182,18 @@ static int nulink_usb_write_mem(void *handle, uint32_t addr, uint32_t size,
 	int retval = ERROR_OK;
 	uint32_t bytes_remaining;
 	struct nulink_usb_handle_s *h = handle;
+	extern char *m_target_name;
 
 	//LOG_DEBUG("nulink_usb_read_mem: addr(%04x), size(%d), count(%d)", addr, size, count);
 
 	if (addr < ARM_SRAM_BASE) {
-		LOG_DEBUG("since the address is below ARM_SRAM_BASE, the function may not support this kind of writing.");
-		//return retval;
+		if (strcmp(m_target_name, "NUC505") != 0) {
+			LOG_DEBUG("since the address is below ARM_SRAM_BASE, the Nuvoton %s chip does not support this kind of writing.", m_target_name);
+			return retval;
+		}
+		else {
+			LOG_DEBUG("although the address is below ARM_SRAM_BASE, the Nuvoton %s chip supports this kind of writing.", m_target_name);
+		}
 	}
 
 	/* calculate byte count */
