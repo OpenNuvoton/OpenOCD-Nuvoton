@@ -266,6 +266,34 @@ int jtag_libusb_get_pid(struct jtag_libusb_device *dev, uint16_t *pid)
 
 	return ERROR_FAIL;
 }
+
+uint16_t jtag_libusb_get_maxPacketSize(struct jtag_libusb_device_handle *devh, uint8_t configuration, uint8_t interface_num)
+{
+	struct jtag_libusb_device *udev = jtag_libusb_get_device(devh);
+	struct libusb_config_descriptor *config = NULL;
+	int retCode = -99;
+	uint16_t result = -1;
+
+	retCode = libusb_get_config_descriptor(udev, configuration, &config);
+	if (retCode != 0 || config == NULL)
+	{
+		LOG_ERROR("libusb_get_config_descriptor() failed with %s", libusb_error_name(retCode));
+		return result;
+	}
+
+	const struct libusb_interface_descriptor *descriptor;
+	descriptor = &config->interface[interface_num].altsetting[0];
+
+	for (int i = 0; i < descriptor->bNumEndpoints; i++) {
+		if (descriptor->endpoint[i].bEndpointAddress & 0x80) {
+			result = descriptor->endpoint[i].wMaxPacketSize;
+			break;
+		}
+	}
+	libusb_free_config_descriptor(config);
+
+	return result;
+}
 #if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 int jtag_libusb_nuvoton_mutex_lock()
 {

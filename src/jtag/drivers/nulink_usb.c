@@ -65,6 +65,7 @@ struct nulink_usb_handle_s {
 	uint8_t interface_num;
 	uint8_t rx_ep;
 	uint8_t tx_ep;
+	uint16_t max_packet_size;
 	uint32_t usbcmdidx;
 	uint8_t cmdidx;
 	uint8_t cmdbuf[NULINK2_HID_MAX_SIZE];
@@ -144,10 +145,10 @@ static void print64BytesBufferContent(char *bufferName, uint8_t *buf, int size)
 #ifndef _WIN32
 double GetTickCount(void)
 {
-  struct timespec now;
-  if (clock_gettime(CLOCK_MONOTONIC, &now))
-    return 0;
-  return now.tv_sec * 1000.0 + now.tv_nsec / 1000000.0;
+	struct timespec now;
+	if (clock_gettime(CLOCK_MONOTONIC, &now))
+		return 0;
+	return now.tv_sec * 1000.0 + now.tv_nsec / 1000000.0;
 }
 #endif
 
@@ -161,18 +162,18 @@ static int nulink_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 #if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 	jtag_libusb_nuvoton_mutex_lock();
 #endif
-	jtag_libusb_interrupt_write(h->fd, h->tx_ep, (char *)h->cmdbuf, NULINK_HID_MAX_SIZE,
+	jtag_libusb_interrupt_write(h->fd, h->tx_ep, (char *)h->cmdbuf, h->max_packet_size,
 		NULINK_WRITE_TIMEOUT);
 #ifdef SHOW_BUFFER
 	char bufName[20] = "cmd transferred";
-	print64BytesBufferContent(bufName, h->cmdbuf, NULINK_HID_MAX_SIZE);
+	print64BytesBufferContent(bufName, h->cmdbuf, h->max_packet_size);
 #endif
 	do {
 		jtag_libusb_interrupt_read(h->fd, h->rx_ep, (char *)buf,
-			NULINK_HID_MAX_SIZE, NULINK_READ_TIMEOUT);
+			h->max_packet_size, NULINK_READ_TIMEOUT);
 #ifdef SHOW_BUFFER
 		char bufName1[20] = "data received";
-		print64BytesBufferContent(bufName1, buf, NULINK_HID_MAX_SIZE);
+		print64BytesBufferContent(bufName1, buf, h->max_packet_size);
 #endif
 		if(GetTickCount() - startTime > USBCMD_TIMEOUT)
 		{
@@ -197,18 +198,18 @@ static int nulink2_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 #if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 	jtag_libusb_nuvoton_mutex_lock();
 #endif
-	jtag_libusb_interrupt_write(h->fd, h->tx_ep, (char *)h->cmdbuf, NULINK2_HID_MAX_SIZE,
+	jtag_libusb_interrupt_write(h->fd, h->tx_ep, (char *)h->cmdbuf, h->max_packet_size,
 		NULINK_WRITE_TIMEOUT);
 #ifdef SHOW_BUFFER
 	char bufName[20] = "cmd transferred";
-	print64BytesBufferContent(bufName, h->cmdbuf, NULINK2_HID_MAX_SIZE);
+	print64BytesBufferContent(bufName, h->cmdbuf, h->max_packet_size);
 #endif
 	do {
 		jtag_libusb_interrupt_read(h->fd, h->rx_ep, (char *)buf,
-			NULINK2_HID_MAX_SIZE, NULINK_READ_TIMEOUT);
+			h->max_packet_size, NULINK_READ_TIMEOUT);
 #ifdef SHOW_BUFFER
 		char bufName1[20] = "data received";
-		print64BytesBufferContent(bufName1, buf, NULINK2_HID_MAX_SIZE);
+		print64BytesBufferContent(bufName1, buf, h->max_packet_size);
 #endif
 		if(GetTickCount() - startTime > USBCMD_TIMEOUT)
 		{
@@ -257,9 +258,9 @@ static void nulink_usb_init_buffer(void *handle, uint32_t size)
 
 	h->cmdidx = 0;
 
-	memset(h->cmdbuf, 0, NULINK_HID_MAX_SIZE);
-	memset(h->tempbuf, 0, NULINK_HID_MAX_SIZE);
-	memset(h->databuf, 0, NULINK_HID_MAX_SIZE);
+	memset(h->cmdbuf, 0, h->max_packet_size);
+	memset(h->tempbuf, 0, h->max_packet_size);
+	memset(h->databuf, 0, h->max_packet_size);
 
 	h->cmdbuf[0] = (char)(++h->usbcmdidx & (unsigned char)0x7F);
 	h->cmdbuf[1] = (char)size;
@@ -272,9 +273,9 @@ static void nulink2_usb_init_buffer(void *handle, uint32_t size)
 
 	h->cmdidx = 0;
 
-	memset(h->cmdbuf, 0, NULINK2_HID_MAX_SIZE);
-	memset(h->tempbuf, 0, NULINK2_HID_MAX_SIZE);
-	memset(h->databuf, 0, NULINK2_HID_MAX_SIZE);
+	memset(h->cmdbuf, 0, h->max_packet_size);
+	memset(h->tempbuf, 0, h->max_packet_size);
+	memset(h->databuf, 0, h->max_packet_size);
 
 	h->cmdbuf[0] = (char)(++h->usbcmdidx & (unsigned char)0x7F);
 	h->cmdbuf[1] = (char)((size >> 8) & 0xFF);
@@ -1412,21 +1413,22 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 
 	m_nulink_usb_handle = NULL;
 
-    struct stat fileStat;
+	struct stat fileStat;
 	err = stat("c:\\Program Files\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe", &fileStat);
 	LOG_DEBUG("Stat Case 1: %d", err);
-    if(err >= 0) {
+	if(err >= 0) {
 		sprintf(buf, "\"c:\\Program Files\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe\" -o conflict");
 		result = system(buf);
 		LOG_DEBUG("Run NuLink.exe on Win32 (result: %d)", result);
 		if (result == -46) {
 			LOG_DEBUG("A conflict happened! (result: %d)", result);
-			LOG_ERROR("The ICE has been used by another Nuvoton Tool. OpenOCD cannot work with the ICE unless we close the connection between the ICE and Nuvoton tool.");
+			LOG_ERROR("The ICE has been used by another Nuvoton tool. OpenOCD cannot work with the ICE unless we close the connection between the ICE and Nuvoton tool.");
 			return ERROR_FAIL;
 		}
 		else if (result == -6) {
 			LOG_DEBUG("Cannot find a target chip! (result: %d)", result);
 			LOG_ERROR("We cannot find any Nuvoton device. Please check the hardware connection.");
+			LOG_ERROR("If the ICE is used by another Nuvoton tool, please close the connection between the ICE and Nuvoton tool.");
 			return ERROR_FAIL;
 		}
 		else if (result == 0) {
@@ -1450,6 +1452,7 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 			else if (result == -6) {
 				LOG_DEBUG("Cannot find a target chip! (result: %d)", result);
 				LOG_ERROR("We cannot find any Nuvoton device. Please check the hardware connection.");
+				LOG_ERROR("If the ICE is used by another Nuvoton tool, please close the connection between the ICE and Nuvoton tool.");
 				return ERROR_FAIL;
 			}
 			else if (result == 0) {
@@ -1474,8 +1477,8 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 
 	const uint16_t vids[] = { param->vid, 0 };
 	const uint16_t pids[] = { param->pid, 0 };
-	const uint16_t vid_nulink2[] = { 0x0416, 0 };
-	const uint16_t pid_nulink2[] = { 0x5200, 0 };
+	const uint16_t vid_nulink2[] = { 0x0416, 0x0416, 0 };
+	const uint16_t pid_nulink2[] = { 0x5200, 0x5201, 0 };
 	const char *serial = param->serial;
 
 	if (param->vid != 0 && param->pid != 0) {
@@ -1493,6 +1496,11 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 			h->interface_num = NULINK2_INTERFACE_NUM;
 			h->rx_ep = NULINK2_RX_EP;
 			h->tx_ep = NULINK2_TX_EP;
+			h->max_packet_size = jtag_libusb_get_maxPacketSize(h->fd, 0, h->interface_num);
+			if (h->max_packet_size == -1) {
+				h->max_packet_size = NULINK2_HID_MAX_SIZE;
+			}
+			LOG_DEBUG("max_packet_size: %d", h->max_packet_size);
 			LOG_INFO("NULINK is Nu-Link2");
 		}
 		else {
@@ -1508,6 +1516,11 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 			h->interface_num = NULINK_INTERFACE_NUM;
 			h->rx_ep = NULINK_RX_EP;
 			h->tx_ep = NULINK_TX_EP;
+			h->max_packet_size = jtag_libusb_get_maxPacketSize(h->fd, 0, h->interface_num);
+			if (h->max_packet_size == -1) {
+				h->max_packet_size = NULINK_HID_MAX_SIZE;
+			}
+			LOG_DEBUG("max_packet_size: %d", h->max_packet_size);
 			LOG_INFO("NULINK is Nu-Link1");
 		}
 
