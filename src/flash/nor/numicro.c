@@ -748,7 +748,7 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"M487SIDAE", 0x00D48710, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
 	{"M487SGAAE", 0x00D48711, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
 	{"M480TEST", 0x00D480FF, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
-
+	/* M480LD */
 	{"M481SGCAE", 0x01348110, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
 	{"M481SG8AE", 0x01348111, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
 	{"M481SG8AE2A", 0x01348115, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
@@ -2369,8 +2369,9 @@ static int numicro_probe(struct flash_bank *bank)
 		}
 	}
 	else { /* armv7m (M4) */
-		if ((cpu->partid & 0x00FFF000) == 0x00D48000) {
-			m_pageSize = NUMICRO_PAGESIZE * 8; /* for M480 */
+		if (((cpu->partid & 0x00FFF000) == 0x00D48000) ||
+			((cpu->partid & 0x0FFFF000) == 0x01348000)) {
+			m_pageSize = NUMICRO_PAGESIZE * 8; /* for M480 and M480LD */
 		}
 		else if (cpu->partid == 0x00550505) {
 			m_pageSize = 0x1000; /* for NUC505 */
@@ -2395,7 +2396,8 @@ static int numicro_probe(struct flash_bank *bank)
 	}
 
 	/* decide the target name */
-	if (((cpu->partid & 0x00FFF000) == 0x00D48000)) {
+	if (((cpu->partid & 0x00FFF000) == 0x00D48000) ||
+		((cpu->partid & 0x0FFFF000) == 0x01348000)) {
 		m_target_name = "M480";
 	}
 	else if (cpu->partid == 0x00550505) {
