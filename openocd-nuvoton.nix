@@ -32,6 +32,8 @@ stdenv.mkDerivation rec {
     "-Wno-maybe-uninitialized"
     "-Wno-unused-variable"
     "-Wno-incompatible-pointer-types"
+    "-Wno-type-limits"
+    "-Wno-tautological-compare"
   ];
 
   postInstall = lib.optionalString stdenv.isLinux ''
