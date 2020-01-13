@@ -819,6 +819,9 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"M2351ZIAAE", 0x00235103, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 16)},
 	{"M2353SIAAE", 0x00235300, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 16)},
 
+	/* M2355 */
+	{"M2355TEST", 0x00235500, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 16)},
+
 	/* M261 */
 	{"M261ZIAAE", 0x00261000, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
 	{"M261SIAAE", 0x00261001, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
@@ -843,7 +846,7 @@ struct  numicro_flash_bank {
 /* Private variables */
 uint32_t m_pageSize = NUMICRO_PAGESIZE;
 uint32_t m_addressMinusOffset = 0;
-uint32_t m_M23SecureDebugState = 0; /* 0:Normal; 1:M23 and Secure Debug Enabled; 2:M23 and Secure Debug Disabled (NS) */
+uint32_t m_M23SecureDebugState = 0; /* 0:Normal; 1:M23 and Secure Debug Enabled(S); 2:M23 and Secure Debug Disabled(NS) */
 uint32_t m_flashInfo = 0; /* bit 0:SPROM exists; */
 char *m_target_name = "";
 
@@ -1092,7 +1095,7 @@ static const uint8_t numicro_M4_M23_flash_write_code[] = {
 	0x00, 0xC0, 0x00, 0x40 /* .word	0x4000C000    */
 };
 
-static const uint8_t numicro_M23_NS_flash_write_code[] = {
+static const uint8_t numicro_M2351_NS_flash_write_code[] = {
 	/* Params:
 	* r0 - workarea buffer / result
 	* r1 - target address
@@ -1142,7 +1145,7 @@ static const uint8_t numicro_M23_NS_flash_write_code[] = {
 	0x19, 0x7f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-static const uint8_t numicro_M23_NS_flash_erase_code[] = {
+static const uint8_t numicro_M2351_NS_flash_erase_code[] = {
 	/* Params:
 	* r0 - target address
 	*/
@@ -1160,7 +1163,7 @@ static const uint8_t numicro_M23_NS_flash_erase_code[] = {
 	0x00, 0x00,
 };
 
-static const uint8_t numicro_M23_NS_init_info_code[] = {
+static const uint8_t numicro_M2351_NS_init_info_code[] = {
 	/* Params:
 	* r0 - address to place info (In fact, the actual location will be the address plus one word)
 	*/
@@ -1205,82 +1208,113 @@ static const uint8_t numicro_M23_NS_init_info_code[] = {
 	0x01, 0xbd, 0x11, 0x7f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
+static const uint32_t numicro_M2355_flash_algorithm_code[] = {
+	0xE00ABE00, 0x062D780D, 0x24084068, 0xD3000040, 0x1E644058, 0x1C49D1FA, 0x2A001E52, 0x4770D1F2,
+	0x9002b084, 0x92009101, 0x4820e7ff, 0x07c06800, 0xd0012800, 0xe7f8e7ff, 0x6801481d, 0x43112240,
+	0x98026001, 0x6008491b, 0x491b9801, 0x98006008, 0xd1052800, 0x2000e7ff, 0x491843c0, 0xe0036008,
+	0x49174816, 0xe7ff6001, 0x21014816, 0xf3bf6001, 0xe7ff8f6f, 0x6800480d, 0x280007c0, 0xe7ffd001,
+	0x480be7f8, 0x06406800, 0xd5082800, 0x4808e7ff, 0x22406801, 0x60014311, 0x90032001, 0x2000e002,
+	0xe7ff9003, 0xb0049803, 0x46c04770, 0x5000c040, 0x5000c000, 0x5000c00c, 0x5000c004, 0x5000c008,
+	0x0055aa03, 0x5000c010, 0x9002b084, 0x92009101, 0x07002005, 0x28006800, 0xe7ffd103, 0x90032001,
+	0x480fe01b, 0x60012159, 0x60012116, 0x60012188, 0x07c06800, 0xd1032800, 0x2001e7ff, 0xe00c9003,
+	0x21494808, 0x68006001, 0xd1032800, 0x2001e7ff, 0xe0029003, 0x90032000, 0x9803e7ff, 0x4770b004,
+	0x50000100, 0x5000c000, 0x9000b081, 0x4806e7ff, 0x07c06800, 0xd0012800, 0xe7f8e7ff, 0x21004803,
+	0x46086001, 0x4770b001, 0x5000c040, 0x5000c000, 0xb082b580, 0x98019001, 0x070a2101, 0x90014390,
+	0x4a0e9801, 0x90014010, 0x220f9801, 0x40100512, 0x42880549, 0xe7ffd107, 0x49099801, 0x90011840,
+	0x90002001, 0x2000e002, 0xe7ff9000, 0x9a009901, 0xf7ff2022, 0xb002ff45, 0x46c0bd80, 0xfffff800,
+	0xffe00000, 0xb084b580, 0x91019002, 0x90002000, 0x9800e7ff, 0x42889901, 0xe7ffd20f, 0x99009802,
+	0x92001c4a, 0x58400089, 0xffc2f7ff, 0xd0032800, 0x2001e7ff, 0xe0039003, 0x2000e7eb, 0xe7ff9003,
+	0xb0049803, 0x46c0bd80, 0x9002b084, 0x92009101, 0x1cc09801, 0x43882103, 0x98029001, 0x07092101,
+	0x90024388, 0x4823e7ff, 0x07c06800, 0xd0012800, 0xe7f8e7ff, 0x68014820, 0x43112240, 0x481f6001,
+	0x60012121, 0x9801e7ff, 0xd02c2800, 0x9802e7ff, 0x6008491b, 0x68009800, 0x6008491a, 0x2101481a,
+	0xf3bf6001, 0xe7ff8f6f, 0x68004812, 0x280007c0, 0xe7ffd001, 0x4810e7f8, 0x06406800, 0xd5082800,
+	0x480de7ff, 0x22406801, 0x60014311, 0x90032001, 0x9802e00c, 0x90021d00, 0x1d009800, 0x98019000,
+	0x90011f00, 0x2000e7cf, 0xe7ff9003, 0xb0049803, 0x46c04770, 0x5000c040, 0x5000c000, 0x5000c00c,
+	0x5000c004, 0x5000c008, 0x5000c010, 0x9003b084, 0x92019102, 0x1cc09802, 0x43882103, 0x98039002,
+	0x07092101, 0x90004008, 0x43889803, 0xe7ff9003, 0x68004823, 0x280007c0, 0xe7ffd001, 0x4821e7f8,
+	0x22406801, 0x60014311, 0x2100481f, 0xe7ff6001, 0x28009802, 0xe7ffd02e, 0x491c9803, 0x481c6008,
+	0x60012101, 0x8f6ff3bf, 0x4815e7ff, 0x07c06800, 0xd0012800, 0xe7f8e7ff, 0x68004812, 0x28000640,
+	0xe7ffd506, 0x6801480f, 0x43112240, 0xe0116001, 0x68004810, 0x68099901, 0xd0014288, 0xe009e7ff,
+	0x1d009803, 0x98019003, 0x90011d00, 0x1f009802, 0xe7cd9002, 0x99009803, 0xb0044308, 0x46c04770,
+	0x5000c040, 0x5000c000, 0x5000c00c, 0x5000c004, 0x5000c010, 0x5000c008, 0x00000000
+};
+
 static const uint32_t numicro_M480_flash_algorithm_code[] = {
-    0xE00ABE00, 0x062D780D, 0x24084068, 0xD3000040, 0x1E644058, 0x1C49D1FA, 0x2A001E52, 0x4770D1F2,
-    0x4603b530, 0x2164460c, 0x4dfe2059, 0xf04f6028, 0xf04f0016, 0xf8c54580, 0xf04f0100, 0xf8c50088,
-    0xf04f0100, 0xf8d04080, 0xf0100100, 0xd1010f01, 0xbd302001, 0x680048f4, 0x0004f040, 0x4580f04f,
-    0x0200f8c5, 0xf8d04628, 0xf0400204, 0xf8c50004, 0xbf000204, 0xf1a10008, 0xd1fb0101, 0x680048eb,
-    0x0021f040, 0x60284de9, 0x69c04628, 0x0001f040, 0x462861e8, 0xf0106800, 0xd1010f01, 0xe7d82001,
-    0x680048e2, 0x0040f040, 0x60284de0, 0xe7d02000, 0xbf004601, 0x690048dd, 0x0f01f010, 0x48dbd1fa,
-    0xf0206800, 0x4ad90021, 0x46106010, 0xf02069c0, 0x61d00001, 0x47702000, 0xbf004601, 0x690048d3,
-    0x0f01f010, 0x48d1d1fa, 0xf0406800, 0x4acf0040, 0x20226010, 0xf02160d0, 0x60500003, 0x1f00f5b1,
-    0x48cbd101, 0x20016090, 0x61104ac8, 0x8f60f3bf, 0x48c6bf00, 0xf0106900, 0xd1fa0f01, 0x680048c3,
-    0x0f40f010, 0x48c1d007, 0xf0406800, 0x4abf0040, 0x20016010, 0x20004770, 0x4601e7fc, 0x48bbbf00,
-    0xf0106900, 0xd1fa0f01, 0x680048b8, 0x0040f040, 0x60104ab6, 0x60d02025, 0x60414610, 0x1f00f5b1,
-    0x48b3d101, 0x20016090, 0x61104ab0, 0x8f60f3bf, 0x48aebf00, 0xf0106900, 0xd1fa0f01, 0x680048ab,
-    0x0f40f010, 0x48a9d007, 0xf0406800, 0x4aa70040, 0x20016010, 0x20004770, 0xb570e7fc, 0x460d4604,
-    0xe01a2300, 0x0023f854, 0x0c800480, 0x1ae8d10c, 0xd3092804, 0x0023f854, 0xffbff7ff, 0xd0010006,
-    0xbd704630, 0xe0081d1b, 0x0023f854, 0xff84f7ff, 0xd0010006, 0xe7f44630, 0x42ab1c5b, 0x2000d3e2,
-    0xb570e7ef, 0x460b4604, 0x22004615, 0xf1034629, 0xf020000f, 0xbf00030f, 0x6900488c, 0x0f01f010,
-    0x488ad1fa, 0xf0406800, 0x4e880040, 0xf0246030, 0x6070000f, 0x60f02027, 0x1c524610, 0x0020f851,
-    0x60304e84, 0xf1024610, 0xf8510201, 0x4e7f0020, 0x0084f8c6, 0xf1024610, 0xf8510201, 0x4e7e0020,
-    0x46106030, 0x0201f102, 0x0020f851, 0x0604f106, 0xf04f6030, 0x4e750001, 0xf1a36130, 0xe0290310,
-    0x4876bf00, 0xf0106800, 0xd1fa0f30, 0x1c524610, 0x0020f851, 0x60304e6f, 0xf1024610, 0xf8510201,
-    0x4e6a0020, 0x0084f8c6, 0x486cbf00, 0xf0106800, 0xd1fa0fc0, 0x1c524610, 0x0020f851, 0x60304e66,
-    0xf1024610, 0xf8510201, 0x4e600020, 0x008cf8c6, 0x0310f1a3, 0xd1d32b00, 0x485cbf00, 0xf0106900,
-    0xd1fa0f01, 0xbd702000, 0x4603b510, 0xf0201cc8, 0xbf000103, 0x69004855, 0x0f01f010, 0x4853d1fa,
-    0xf0406800, 0x4c510040, 0x20216020, 0xe01f60e0, 0x0003f023, 0x60604c4d, 0x60a06810, 0x61202001,
-    0x8f60f3bf, 0x4849bf00, 0xf0106900, 0xd1fa0f01, 0x68004846, 0x0f40f010, 0x4844d007, 0xf0406800,
-    0x4c420040, 0x20016020, 0x1d1bbd10, 0x1f091d12, 0xd1dd2900, 0xe7f72000, 0x47f0e92d, 0x460c4605,
-    0xf04f4616, 0x46c20800, 0x4838bf00, 0xf0106900, 0xd1fa0f01, 0x68004835, 0x0040f040, 0x60084933,
-    0xf0201ce0, 0xe02f0403, 0x0dc005e8, 0xf5b4d10c, 0xd3097f00, 0x7700f44f, 0x0208eb06, 0x46284639,
-    0xff2ff7ff, 0xe0164682, 0x0dc005e8, 0x2c10d10b, 0xf024d309, 0xeb06070f, 0x46390208, 0xf7ff4628,
-    0x4682ff20, 0x4627e007, 0x0208eb06, 0x46284639, 0xff8af7ff, 0x443d4682, 0x1be444b8, 0x0f00f1ba,
-    0x2001d002, 0x87f0e8bd, 0xd1cd2c00, 0xe7f92000, 0x1ccbb510, 0x0103f023, 0x4b14bf00, 0xf013691b,
-    0xd1fa0f01, 0x681b4b11, 0x0340f043, 0x60234c0f, 0x60e32300, 0xf020e033, 0x4c0c0303, 0x23006063,
-    0x230160a3, 0xf3bf6123, 0xbf008f60, 0x691b4b07, 0x0f01f013, 0x4b05d1fa, 0xf013681b, 0xd0150f40,
-    0xe00d4b02, 0x40000100, 0x40000200, 0x4000c000, 0x0055aa03, 0x4000c080, 0x4000c088, 0x4000c0c0,
-    0xf043681b, 0x4c1a0340, 0xbd106023, 0x689b4b18, 0x42a36814, 0xe7f8d000, 0x1d121d00, 0x29001f09,
-    0xbf00d1c9, 0xb510e7f1, 0x48114603, 0xf0106e00, 0xd00c0f02, 0x6503480e, 0x65826541, 0x4c0c2001,
-    0xbf0065e0, 0x6e00480a, 0x0f01f010, 0x4808d1fa, 0xf0106e00, 0xd1010f04, 0xbd102002, 0x6e004804,
-    0x0f02f010, 0x2001d001, 0x2000e7f7, 0x0000e7f5, 0x4000c000, 0x00000000
+	0xE00ABE00, 0x062D780D, 0x24084068, 0xD3000040, 0x1E644058, 0x1C49D1FA, 0x2A001E52, 0x4770D1F2,
+	0x4603b530, 0x2164460c, 0x4dfe2059, 0xf04f6028, 0xf04f0016, 0xf8c54580, 0xf04f0100, 0xf8c50088,
+	0xf04f0100, 0xf8d04080, 0xf0100100, 0xd1010f01, 0xbd302001, 0x680048f4, 0x0004f040, 0x4580f04f,
+	0x0200f8c5, 0xf8d04628, 0xf0400204, 0xf8c50004, 0xbf000204, 0xf1a10008, 0xd1fb0101, 0x680048eb,
+	0x0021f040, 0x60284de9, 0x69c04628, 0x0001f040, 0x462861e8, 0xf0106800, 0xd1010f01, 0xe7d82001,
+	0x680048e2, 0x0040f040, 0x60284de0, 0xe7d02000, 0xbf004601, 0x690048dd, 0x0f01f010, 0x48dbd1fa,
+	0xf0206800, 0x4ad90021, 0x46106010, 0xf02069c0, 0x61d00001, 0x47702000, 0xbf004601, 0x690048d3,
+	0x0f01f010, 0x48d1d1fa, 0xf0406800, 0x4acf0040, 0x20226010, 0xf02160d0, 0x60500003, 0x1f00f5b1,
+	0x48cbd101, 0x20016090, 0x61104ac8, 0x8f60f3bf, 0x48c6bf00, 0xf0106900, 0xd1fa0f01, 0x680048c3,
+	0x0f40f010, 0x48c1d007, 0xf0406800, 0x4abf0040, 0x20016010, 0x20004770, 0x4601e7fc, 0x48bbbf00,
+	0xf0106900, 0xd1fa0f01, 0x680048b8, 0x0040f040, 0x60104ab6, 0x60d02025, 0x60414610, 0x1f00f5b1,
+	0x48b3d101, 0x20016090, 0x61104ab0, 0x8f60f3bf, 0x48aebf00, 0xf0106900, 0xd1fa0f01, 0x680048ab,
+	0x0f40f010, 0x48a9d007, 0xf0406800, 0x4aa70040, 0x20016010, 0x20004770, 0xb570e7fc, 0x460d4604,
+	0xe01a2300, 0x0023f854, 0x0c800480, 0x1ae8d10c, 0xd3092804, 0x0023f854, 0xffbff7ff, 0xd0010006,
+	0xbd704630, 0xe0081d1b, 0x0023f854, 0xff84f7ff, 0xd0010006, 0xe7f44630, 0x42ab1c5b, 0x2000d3e2,
+	0xb570e7ef, 0x460b4604, 0x22004615, 0xf1034629, 0xf020000f, 0xbf00030f, 0x6900488c, 0x0f01f010,
+	0x488ad1fa, 0xf0406800, 0x4e880040, 0xf0246030, 0x6070000f, 0x60f02027, 0x1c524610, 0x0020f851,
+	0x60304e84, 0xf1024610, 0xf8510201, 0x4e7f0020, 0x0084f8c6, 0xf1024610, 0xf8510201, 0x4e7e0020,
+	0x46106030, 0x0201f102, 0x0020f851, 0x0604f106, 0xf04f6030, 0x4e750001, 0xf1a36130, 0xe0290310,
+	0x4876bf00, 0xf0106800, 0xd1fa0f30, 0x1c524610, 0x0020f851, 0x60304e6f, 0xf1024610, 0xf8510201,
+	0x4e6a0020, 0x0084f8c6, 0x486cbf00, 0xf0106800, 0xd1fa0fc0, 0x1c524610, 0x0020f851, 0x60304e66,
+	0xf1024610, 0xf8510201, 0x4e600020, 0x008cf8c6, 0x0310f1a3, 0xd1d32b00, 0x485cbf00, 0xf0106900,
+	0xd1fa0f01, 0xbd702000, 0x4603b510, 0xf0201cc8, 0xbf000103, 0x69004855, 0x0f01f010, 0x4853d1fa,
+	0xf0406800, 0x4c510040, 0x20216020, 0xe01f60e0, 0x0003f023, 0x60604c4d, 0x60a06810, 0x61202001,
+	0x8f60f3bf, 0x4849bf00, 0xf0106900, 0xd1fa0f01, 0x68004846, 0x0f40f010, 0x4844d007, 0xf0406800,
+	0x4c420040, 0x20016020, 0x1d1bbd10, 0x1f091d12, 0xd1dd2900, 0xe7f72000, 0x47f0e92d, 0x460c4605,
+	0xf04f4616, 0x46c20800, 0x4838bf00, 0xf0106900, 0xd1fa0f01, 0x68004835, 0x0040f040, 0x60084933,
+	0xf0201ce0, 0xe02f0403, 0x0dc005e8, 0xf5b4d10c, 0xd3097f00, 0x7700f44f, 0x0208eb06, 0x46284639,
+	0xff2ff7ff, 0xe0164682, 0x0dc005e8, 0x2c10d10b, 0xf024d309, 0xeb06070f, 0x46390208, 0xf7ff4628,
+	0x4682ff20, 0x4627e007, 0x0208eb06, 0x46284639, 0xff8af7ff, 0x443d4682, 0x1be444b8, 0x0f00f1ba,
+	0x2001d002, 0x87f0e8bd, 0xd1cd2c00, 0xe7f92000, 0x1ccbb510, 0x0103f023, 0x4b14bf00, 0xf013691b,
+	0xd1fa0f01, 0x681b4b11, 0x0340f043, 0x60234c0f, 0x60e32300, 0xf020e033, 0x4c0c0303, 0x23006063,
+	0x230160a3, 0xf3bf6123, 0xbf008f60, 0x691b4b07, 0x0f01f013, 0x4b05d1fa, 0xf013681b, 0xd0150f40,
+	0xe00d4b02, 0x40000100, 0x40000200, 0x4000c000, 0x0055aa03, 0x4000c080, 0x4000c088, 0x4000c0c0,
+	0xf043681b, 0x4c1a0340, 0xbd106023, 0x689b4b18, 0x42a36814, 0xe7f8d000, 0x1d121d00, 0x29001f09,
+	0xbf00d1c9, 0xb510e7f1, 0x48114603, 0xf0106e00, 0xd00c0f02, 0x6503480e, 0x65826541, 0x4c0c2001,
+	0xbf0065e0, 0x6e00480a, 0x0f01f010, 0x4808d1fa, 0xf0106e00, 0xd1010f04, 0xbd102002, 0x6e004804,
+	0x0f02f010, 0x2001d001, 0x2000e7f7, 0x0000e7f5, 0x4000c000, 0x00000000
 };
 
 static const uint32_t numicro_NUC505_flash_algorithm_code[] = {
-    0xE00ABE00, 0x062D780D, 0x24084068, 0xD3000040, 0x1E644058, 0x1C49D1FA, 0x2A001E52, 0x4770D1F2,
-    0x4770ba40, 0x4770bac0, 0x0030ea4f, 0x00004770, 0x684a49ba, 0x0210f022, 0x1000ea42, 0x47706048,
-    0x684a49b6, 0xd1fc07d2, 0x4207f44f, 0x6208600a, 0xf0406848, 0x60480001, 0x07c06848, 0x4770d1fc,
-    0x684148ae, 0xd1fc07c9, 0x61e0f44f, 0x68416001, 0x0101f041, 0x68416041, 0xd1fc07c9, 0xb2c06900,
-    0xb5004770, 0xf7ff2000, 0x2006ffd3, 0xffd8f7ff, 0xf85d2001, 0xe7cbeb04, 0x2000b500, 0xffc8f7ff,
-    0xf7ff2005, 0xf7ffffcd, 0x07c0ffdb, 0x2001d1fb, 0xeb04f85d, 0xb500e7bc, 0xf7ff4603, 0x2000ffe2,
-    0xffb6f7ff, 0xf7ff2020, 0xf3c3ffbb, 0xf7ff4007, 0xf3c3ffb7, 0xf7ff2007, 0xb2d8ffb3, 0xffb0f7ff,
-    0xf7ff2001, 0xf85dffa5, 0xe7d5eb04, 0xf7ffb500, 0x2000ffc8, 0xff9cf7ff, 0xf7ff20c7, 0x2001ffa1,
-    0xff96f7ff, 0xeb04f85d, 0xb570e7c6, 0x460e4615, 0xf7ff4604, 0x2000ffb6, 0xff8af7ff, 0x631c4b7f,
-    0x639e635d, 0x7010f04f, 0x68586018, 0x0001f040, 0x68586058, 0xd1fc07c0, 0xf7ff2001, 0xe8bdff79,
-    0xe7a94070, 0x4604b570, 0x460e4615, 0xf7ff2000, 0x4b72ff6f, 0x635d631c, 0x02d8639e, 0x68586018,
-    0x0001f040, 0x68586058, 0xd1fc07c0, 0x4070e8bd, 0xe75d2001, 0x4603b500, 0xf7ff2000, 0x209fff59,
-    0xff5ef7ff, 0xff6cf7ff, 0xf7ff7098, 0x7058ff69, 0xff66f7ff, 0x20017018, 0xeb04f85d, 0xf04fe748,
-    0xf8d04080, 0xf0411204, 0xf8c00108, 0x495b1204, 0x6943684a, 0x020ff36f, 0x6380f443, 0x69436143,
-    0x6380f423, 0x68486143, 0x4310b280, 0x68486048, 0x0020f020, 0x0010f040, 0x47706048, 0x2300b578,
-    0x4180f04f, 0x68499300, 0xf0014d4d, 0x444d010f, 0xd0022907, 0xd0032906, 0x2101e030, 0xe0006069,
-    0x2a01606b, 0x6028d100, 0xffc9f7ff, 0x68704e43, 0xf0206869, 0xea4000c0, 0x60701081, 0xf7ff4668,
-    0x9800ffa9, 0x447ff06f, 0x407ff030, 0xd0019000, 0xd11442a0, 0xb1886868, 0x60681c40, 0xf0216871,
-    0xea4101c0, 0x60701080, 0xf7ff4668, 0x9800ff93, 0x407ff030, 0xd0019000, 0xd10042a0, 0xbd782001,
-    0xf7ffb500, 0x482dff9c, 0x4a2d6841, 0x01c0f021, 0x6852444a, 0x1182ea41, 0x20006041, 0x2001bd00,
-    0x49274770, 0x4449b500, 0x1a406809, 0xff13f7ff, 0xbd002000, 0x41f0e92d, 0xf8df2700, 0x1cc98084,
-    0x46064694, 0x0403f021, 0xe01944c8, 0x0ffff016, 0x2cffd10a, 0xf8d8d908, 0xf44f0000, 0x1a317580,
-    0x0007eb0c, 0xe006462a, 0x0000f8d8, 0x1a314625, 0x0007eb0c, 0xf7ff4622, 0x442eff18, 0x1b64442f,
-    0xd1e32c00, 0xe8bd2000, 0xb57081f0, 0x460c4616, 0x4605460a, 0x480b4601, 0xf7ff4448, 0x4809ff23,
-    0x44482100, 0x5c42e006, 0x429a5c73, 0x1868d001, 0x1c49bd70, 0xd3f642a1, 0xbd701928, 0x40007000,
-    0x00000004, 0x0000000c, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+	0xE00ABE00, 0x062D780D, 0x24084068, 0xD3000040, 0x1E644058, 0x1C49D1FA, 0x2A001E52, 0x4770D1F2,
+	0x4770ba40, 0x4770bac0, 0x0030ea4f, 0x00004770, 0x684a49ba, 0x0210f022, 0x1000ea42, 0x47706048,
+	0x684a49b6, 0xd1fc07d2, 0x4207f44f, 0x6208600a, 0xf0406848, 0x60480001, 0x07c06848, 0x4770d1fc,
+	0x684148ae, 0xd1fc07c9, 0x61e0f44f, 0x68416001, 0x0101f041, 0x68416041, 0xd1fc07c9, 0xb2c06900,
+	0xb5004770, 0xf7ff2000, 0x2006ffd3, 0xffd8f7ff, 0xf85d2001, 0xe7cbeb04, 0x2000b500, 0xffc8f7ff,
+	0xf7ff2005, 0xf7ffffcd, 0x07c0ffdb, 0x2001d1fb, 0xeb04f85d, 0xb500e7bc, 0xf7ff4603, 0x2000ffe2,
+	0xffb6f7ff, 0xf7ff2020, 0xf3c3ffbb, 0xf7ff4007, 0xf3c3ffb7, 0xf7ff2007, 0xb2d8ffb3, 0xffb0f7ff,
+	0xf7ff2001, 0xf85dffa5, 0xe7d5eb04, 0xf7ffb500, 0x2000ffc8, 0xff9cf7ff, 0xf7ff20c7, 0x2001ffa1,
+	0xff96f7ff, 0xeb04f85d, 0xb570e7c6, 0x460e4615, 0xf7ff4604, 0x2000ffb6, 0xff8af7ff, 0x631c4b7f,
+	0x639e635d, 0x7010f04f, 0x68586018, 0x0001f040, 0x68586058, 0xd1fc07c0, 0xf7ff2001, 0xe8bdff79,
+	0xe7a94070, 0x4604b570, 0x460e4615, 0xf7ff2000, 0x4b72ff6f, 0x635d631c, 0x02d8639e, 0x68586018,
+	0x0001f040, 0x68586058, 0xd1fc07c0, 0x4070e8bd, 0xe75d2001, 0x4603b500, 0xf7ff2000, 0x209fff59,
+	0xff5ef7ff, 0xff6cf7ff, 0xf7ff7098, 0x7058ff69, 0xff66f7ff, 0x20017018, 0xeb04f85d, 0xf04fe748,
+	0xf8d04080, 0xf0411204, 0xf8c00108, 0x495b1204, 0x6943684a, 0x020ff36f, 0x6380f443, 0x69436143,
+	0x6380f423, 0x68486143, 0x4310b280, 0x68486048, 0x0020f020, 0x0010f040, 0x47706048, 0x2300b578,
+	0x4180f04f, 0x68499300, 0xf0014d4d, 0x444d010f, 0xd0022907, 0xd0032906, 0x2101e030, 0xe0006069,
+	0x2a01606b, 0x6028d100, 0xffc9f7ff, 0x68704e43, 0xf0206869, 0xea4000c0, 0x60701081, 0xf7ff4668,
+	0x9800ffa9, 0x447ff06f, 0x407ff030, 0xd0019000, 0xd11442a0, 0xb1886868, 0x60681c40, 0xf0216871,
+	0xea4101c0, 0x60701080, 0xf7ff4668, 0x9800ff93, 0x407ff030, 0xd0019000, 0xd10042a0, 0xbd782001,
+	0xf7ffb500, 0x482dff9c, 0x4a2d6841, 0x01c0f021, 0x6852444a, 0x1182ea41, 0x20006041, 0x2001bd00,
+	0x49274770, 0x4449b500, 0x1a406809, 0xff13f7ff, 0xbd002000, 0x41f0e92d, 0xf8df2700, 0x1cc98084,
+	0x46064694, 0x0403f021, 0xe01944c8, 0x0ffff016, 0x2cffd10a, 0xf8d8d908, 0xf44f0000, 0x1a317580,
+	0x0007eb0c, 0xe006462a, 0x0000f8d8, 0x1a314625, 0x0007eb0c, 0xf7ff4622, 0x442eff18, 0x1b64442f,
+	0xd1e32c00, 0xe8bd2000, 0xb57081f0, 0x460c4616, 0x4605460a, 0x480b4601, 0xf7ff4448, 0x4809ff23,
+	0x44482100, 0x5c42e006, 0x429a5c73, 0x1868d001, 0x1c49bd70, 0xd3f642a1, 0xbd701928, 0x40007000,
+	0x00000004, 0x0000000c, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
 };
 
 static int numicro_init_isp(struct target *target)
@@ -1300,12 +1334,58 @@ static int numicro_init_isp(struct target *target)
 	}
 
 	if (m_M23SecureDebugState == 2) {
-		LOG_DEBUG("numicro_init_isp skips since Secure invasive debug is prohibited.");
+		if (strcmp(m_target_name, "M2355") == 0) {
+			algorithm_init_entry_offset = 0xC9;
+			algorithm_lr = 0x30010001;
+
+			/* allocate working area with init info code */
+			if (target_alloc_working_area(target, sizeof(numicro_M2355_flash_algorithm_code),
+				&init_algorithm) != ERROR_OK) {
+				LOG_WARNING("no working area available, can't do block memory erase");
+				return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
+			}
+
+			retval = target_write_buffer(target, init_algorithm->address,
+				sizeof(numicro_M2355_flash_algorithm_code), numicro_M2355_flash_algorithm_code);
+			if (retval != ERROR_OK)
+				return retval;
+
+			armv7m_info.common_magic = ARMV7M_COMMON_MAGIC;
+			armv7m_info.core_mode = ARM_MODE_THREAD;
+			if (armv7m == NULL) {
+				/* something is very wrong if armv7m is NULL */
+				LOG_ERROR("unable to get armv7m target");
+				return retval;
+			}
+
+			init_reg_param(&reg_params[0], "r0", 32, PARAM_OUT);    /* faddr */
+			init_reg_param(&reg_params[1], "sp", 32, PARAM_OUT);    /* update SP */
+			init_reg_param(&reg_params[2], "lr", 32, PARAM_OUT);
+
+			buf_set_u32(reg_params[0].value, 0, 32, 0);
+			buf_set_u32(reg_params[1].value, 0, 32, init_algorithm->address + target->working_area_size);
+			buf_set_u32(reg_params[2].value, 0, 32, algorithm_lr);
+
+			retval = target_run_algorithm(target, 0, NULL, 3, reg_params,
+				init_algorithm->address + algorithm_init_entry_offset, 0, 100000, &armv7m_info);
+			if (retval != ERROR_OK) {
+				LOG_ERROR("Error executing NuMicro Flash erase algorithm");
+				retval = ERROR_FLASH_OPERATION_FAILED;
+			}
+
+			target_free_working_area(target, init_algorithm);
+			destroy_reg_param(&reg_params[0]);
+			destroy_reg_param(&reg_params[1]);
+			destroy_reg_param(&reg_params[2]);
+		}
+		else {
+			LOG_DEBUG("numicro_init_isp skips since Secure invasive debug is prohibited.");
+		}
 		return ERROR_OK;
 	}
 
 	if (strcmp(m_target_name, "NUC505") == 0) {
-		algorithm_init_entry_offset = 0X1DD;
+		algorithm_init_entry_offset = 0x1DD;
 		algorithm_lr = 0x20000001;
 
 		/* allocate working area with init info code */
@@ -1507,17 +1587,35 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 				return retval;
 		}
 		else {
-			/* allocate working area with flash programming code */
-			if (target_alloc_working_area(target, sizeof(numicro_M23_NS_flash_write_code),
-				&write_algorithm) != ERROR_OK) {
-				LOG_WARNING("no working area available, can't do block memory writes");
-				return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
-			}
+			if (strcmp(m_target_name, "M2355") == 0) {
+				algorithm_programPage_entry_offset = 0x1E9;
+				algorithm_lr = 0x30010001;
 
-			retval = target_write_buffer(target, write_algorithm->address,
-				sizeof(numicro_M23_NS_flash_write_code), numicro_M23_NS_flash_write_code);
-			if (retval != ERROR_OK)
-				return retval;
+				/* allocate working area with flash programming code */
+				if (target_alloc_working_area(target, sizeof(numicro_M2355_flash_algorithm_code),
+					&write_algorithm) != ERROR_OK) {
+					LOG_WARNING("no working area available, can't do block memory writes");
+					return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
+				}
+
+				retval = target_write_buffer(target, write_algorithm->address,
+					sizeof(numicro_M2355_flash_algorithm_code), numicro_M2355_flash_algorithm_code);
+				if (retval != ERROR_OK)
+					return retval;
+			}
+			else {
+				/* allocate working area with flash programming code */
+				if (target_alloc_working_area(target, sizeof(numicro_M2351_NS_flash_write_code),
+					&write_algorithm) != ERROR_OK) {
+					LOG_WARNING("no working area available, can't do block memory writes");
+					return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
+				}
+
+				retval = target_write_buffer(target, write_algorithm->address,
+					sizeof(numicro_M2351_NS_flash_write_code), numicro_M2351_NS_flash_write_code);
+				if (retval != ERROR_OK)
+					return retval;
+			}
 		}
 		/*buffer_size = m_pageSize; <- it doesn't matter because the flash alogrithm uses the word programming. */
 	}
@@ -1550,7 +1648,8 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 		return retval;
 	}
 
-	if (strcmp(m_target_name, "M480") == 0) {
+	if ((strcmp(m_target_name, "M2355") == 0 && m_M23SecureDebugState == 2) ||
+		 strcmp(m_target_name, "M480") == 0) {
 		init_reg_param(&reg_params[0], "r0", 32, PARAM_OUT);    /* faddr */
 		init_reg_param(&reg_params[1], "r1", 32, PARAM_OUT);    /* number of words to program */
 		init_reg_param(&reg_params[2], "r2", 32, PARAM_IN_OUT); /* *pLW (*buffer) */
@@ -1568,7 +1667,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 					break;
 			}
 
-			buf_set_u32(reg_params[0].value, 0, 32, address & NUMICRO_TZ_MASK);
+			buf_set_u32(reg_params[0].value, 0, 32, address/* & NUMICRO_TZ_MASK*/);
 			buf_set_u32(reg_params[1].value, 0, 32, thisrun_count * 4);
 			buf_set_u32(reg_params[2].value, 0, 32, source->address);
 			buf_set_u32(reg_params[3].value, 0, 32, write_algorithm->address + target->working_area_size);
@@ -1596,7 +1695,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			if (thisrun_count == 0)
 				break;
 
-			buf_set_u32(reg_params[0].value, 0, 32, address & NUMICRO_TZ_MASK);
+			buf_set_u32(reg_params[0].value, 0, 32, address/* & NUMICRO_TZ_MASK*/);
 			buf_set_u32(reg_params[1].value, 0, 32, thisrun_count * 4);
 			buf_set_u32(reg_params[2].value, 0, 32, source2->address);
 			buf_set_u32(reg_params[3].value, 0, 32, write_algorithm->address + target->working_area_size);
@@ -1820,7 +1919,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 	return retval;
 }
 
-static int numicro_getinitinfo_ns(struct target *target, uint32_t *part_id)
+static int numicro_M2351_getinitinfo_ns(struct target *target, uint32_t *part_id)
 {
 	struct working_area *init_algorithm;
 	uint32_t address;
@@ -1842,14 +1941,14 @@ static int numicro_getinitinfo_ns(struct target *target, uint32_t *part_id)
 	}
 
 	/* allocate working area with init info code */
-	if (target_alloc_working_area(target, sizeof(numicro_M23_NS_init_info_code),
+	if (target_alloc_working_area(target, sizeof(numicro_M2351_NS_init_info_code),
 		&init_algorithm) != ERROR_OK) {
 		LOG_WARNING("no working area available, can't do block memory erase");
 		return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
 	}
 
 	retval = target_write_buffer(target, init_algorithm->address,
-		sizeof(numicro_M23_NS_init_info_code), numicro_M23_NS_init_info_code);
+		sizeof(numicro_M2351_NS_init_info_code), numicro_M2351_NS_init_info_code);
 	if (retval != ERROR_OK)
 		return retval;
 
@@ -1949,7 +2048,7 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 	struct reg_param reg_params[4];
 	struct armv7m_common *armv7m = target_to_armv7m(target);
 	struct armv7m_algorithm armv7m_info;
-	uint32_t algorithm_erasePage_entry_offset = 0;
+	uint32_t algorithm_eraseSector_entry_offset = 0;
 	uint32_t algorithm_lr = 0;
 	int i, retval = ERROR_OK;
 	uint32_t timeout, status;
@@ -1967,7 +2066,7 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 		return retval;
 
 	if (strcmp(m_target_name, "NUC505") == 0) {
-		algorithm_erasePage_entry_offset = 0x283;
+		algorithm_eraseSector_entry_offset = 0x283;
 		algorithm_lr = 0x20000001;
 
 		/* allocate working area with flash erase code */
@@ -2010,7 +2109,7 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 			buf_set_u32(reg_params[3].value, 0, 32, algorithm_lr);
 
 			retval = target_run_algorithm(target, 0, NULL, 4, reg_params,
-				erase_algorithm->address + algorithm_erasePage_entry_offset, 0, 100000, &armv7m_info);
+				erase_algorithm->address + algorithm_eraseSector_entry_offset, 0, 100000, &armv7m_info);
 			if (retval != ERROR_OK) {
 				LOG_ERROR("Error executing NuMicro Flash erase algorithm");
 				retval = ERROR_FLASH_OPERATION_FAILED;
@@ -2022,7 +2121,7 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 		}
 
 		// uninit
-		algorithm_erasePage_entry_offset = 0x261;
+		algorithm_eraseSector_entry_offset = 0x261;
 		algorithm_lr = 0x20000001;
 
 		buf_set_u32(reg_params[0].value, 0, 32, 0);
@@ -2031,7 +2130,7 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 		buf_set_u32(reg_params[3].value, 0, 32, algorithm_lr);
 
 		retval = target_run_algorithm(target, 0, NULL, 4, reg_params,
-					erase_algorithm->address + algorithm_erasePage_entry_offset, 0, 100000, &armv7m_info);
+					erase_algorithm->address + algorithm_eraseSector_entry_offset, 0, 100000, &armv7m_info);
 		if (retval != ERROR_OK) {
 			LOG_ERROR("Error executing NuMicro Flash programming algorithm");
 			retval = ERROR_FLASH_OPERATION_FAILED;
@@ -2110,56 +2209,116 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 		}
 	}
 	else { // m_M23SecureDebugState == 2
-		/* allocate working area with flash erase code */
-		if (target_alloc_working_area(target, sizeof(numicro_M23_NS_flash_erase_code),
-			&erase_algorithm) != ERROR_OK) {
-			LOG_WARNING("no working area available, can't do block memory erase");
-			return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
-		}
+		if (strcmp(m_target_name, "M2355") == 0) {
+			algorithm_eraseSector_entry_offset = 0x151;
+			algorithm_lr = 0x30010001;
 
-		retval = target_write_buffer(target, erase_algorithm->address,
-			sizeof(numicro_M23_NS_flash_erase_code), numicro_M23_NS_flash_erase_code);
-		if (retval != ERROR_OK)
-			return retval;
-
-		armv7m_info.common_magic = ARMV7M_COMMON_MAGIC;
-		armv7m_info.core_mode = ARM_MODE_THREAD;
-		if (armv7m == NULL) {
-			/* something is very wrong if armv7m is NULL */
-			LOG_ERROR("unable to get armv7m target");
-			return retval;
-		}
-
-		init_reg_param(&reg_params[0], "r0", 32, PARAM_OUT);    /* faddr */
-		init_reg_param(&reg_params[1], "sp", 32, PARAM_OUT);    /* update SP */
-
-		/* use Flash erase code within NuMicro            */
-		/* set breakpoint to 0 with time-out of 100000 ms */
-		for (i = first; i <= last; i++) {
-			if (bank->sectors[i].is_erased == 1) {
-				LOG_DEBUG("sector %d has been erased recently. Skip to the next sector.", i);
-				continue;
+			/* allocate working area with flash erase code */
+			if (target_alloc_working_area(target, sizeof(numicro_M2355_flash_algorithm_code),
+				&erase_algorithm) != ERROR_OK) {
+				LOG_WARNING("no working area available, can't do block memory erase");
+				return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
 			}
 
-			address = (bank->base + bank->sectors[i].offset) /* & NUMICRO_TZ_MASK */;
-			buf_set_u32(reg_params[0].value, 0, 32, address);
-			buf_set_u32(reg_params[1].value, 0, 32, erase_algorithm->address + target->working_area_size);
+			retval = target_write_buffer(target, erase_algorithm->address,
+				sizeof(numicro_M2355_flash_algorithm_code), numicro_M2355_flash_algorithm_code);
+			if (retval != ERROR_OK)
+				return retval;
 
-			retval = target_run_algorithm(target, 0, NULL, 2, reg_params,
-				erase_algorithm->address, 0, 100000, &armv7m_info);
-			if (retval != ERROR_OK) {
-				LOG_ERROR("Error executing NuMicro Flash erase algorithm");
-				retval = ERROR_FLASH_OPERATION_FAILED;
-				break;
+			armv7m_info.common_magic = ARMV7M_COMMON_MAGIC;
+			armv7m_info.core_mode = ARM_MODE_THREAD;
+			if (armv7m == NULL) {
+				/* something is very wrong if armv7m is NULL */
+				LOG_ERROR("unable to get armv7m target");
+				return retval;
 			}
-			else {
-				bank->sectors[i].is_erased = 1;
+
+			init_reg_param(&reg_params[0], "r0", 32, PARAM_OUT);    /* faddr */
+			init_reg_param(&reg_params[1], "sp", 32, PARAM_OUT);    /* update SP */
+			init_reg_param(&reg_params[2], "lr", 32, PARAM_OUT);
+
+			/* use Flash erase code within NuMicro            */
+			/* set breakpoint to 0 with time-out of 100000 ms */
+			for (i = first; i <= last; i++) {
+				if (bank->sectors[i].is_erased == 1) {
+					LOG_DEBUG("sector %d has been erased recently. Skip to the next sector.", i);
+					continue;
+				}
+
+				address = (bank->base + bank->sectors[i].offset) /* & NUMICRO_TZ_MASK */;
+				buf_set_u32(reg_params[0].value, 0, 32, address);
+				buf_set_u32(reg_params[1].value, 0, 32, erase_algorithm->address + target->working_area_size);
+				buf_set_u32(reg_params[2].value, 0, 32, algorithm_lr);
+
+				retval = target_run_algorithm(target, 0, NULL, 3, reg_params,
+					erase_algorithm->address + algorithm_eraseSector_entry_offset, 0, 100000, &armv7m_info);
+				if (retval != ERROR_OK) {
+					LOG_ERROR("Error executing NuMicro Flash erase algorithm");
+					retval = ERROR_FLASH_OPERATION_FAILED;
+					break;
+				}
+				else {
+					bank->sectors[i].is_erased = 1;
+				}
 			}
+
+			target_free_working_area(target, erase_algorithm);
+			destroy_reg_param(&reg_params[0]);
+			destroy_reg_param(&reg_params[1]);
+			destroy_reg_param(&reg_params[2]);
 		}
+		else {
+			/* allocate working area with flash erase code */
+			if (target_alloc_working_area(target, sizeof(numicro_M2351_NS_flash_erase_code),
+				&erase_algorithm) != ERROR_OK) {
+				LOG_WARNING("no working area available, can't do block memory erase");
+				return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
+			}
 
-		target_free_working_area(target, erase_algorithm);
-		destroy_reg_param(&reg_params[0]);
-		destroy_reg_param(&reg_params[1]);
+			retval = target_write_buffer(target, erase_algorithm->address,
+				sizeof(numicro_M2351_NS_flash_erase_code), numicro_M2351_NS_flash_erase_code);
+			if (retval != ERROR_OK)
+				return retval;
+
+			armv7m_info.common_magic = ARMV7M_COMMON_MAGIC;
+			armv7m_info.core_mode = ARM_MODE_THREAD;
+			if (armv7m == NULL) {
+				/* something is very wrong if armv7m is NULL */
+				LOG_ERROR("unable to get armv7m target");
+				return retval;
+			}
+
+			init_reg_param(&reg_params[0], "r0", 32, PARAM_OUT);    /* faddr */
+			init_reg_param(&reg_params[1], "sp", 32, PARAM_OUT);    /* update SP */
+
+			/* use Flash erase code within NuMicro            */
+			/* set breakpoint to 0 with time-out of 100000 ms */
+			for (i = first; i <= last; i++) {
+				if (bank->sectors[i].is_erased == 1) {
+					LOG_DEBUG("sector %d has been erased recently. Skip to the next sector.", i);
+					continue;
+				}
+
+				address = (bank->base + bank->sectors[i].offset) /* & NUMICRO_TZ_MASK */;
+				buf_set_u32(reg_params[0].value, 0, 32, address);
+				buf_set_u32(reg_params[1].value, 0, 32, erase_algorithm->address + target->working_area_size);
+
+				retval = target_run_algorithm(target, 0, NULL, 2, reg_params,
+					erase_algorithm->address, 0, 100000, &armv7m_info);
+				if (retval != ERROR_OK) {
+					LOG_ERROR("Error executing NuMicro Flash erase algorithm");
+					retval = ERROR_FLASH_OPERATION_FAILED;
+					break;
+				}
+				else {
+					bank->sectors[i].is_erased = 1;
+				}
+			}
+
+			target_free_working_area(target, erase_algorithm);
+			destroy_reg_param(&reg_params[0]);
+			destroy_reg_param(&reg_params[1]);
+		}
 	}
 
 	/* done */
@@ -2294,7 +2453,11 @@ static int numicro_get_cpu_type(struct target *target, const struct numicro_cpu_
 		}
 	}
 	else {
-		numicro_getinitinfo_ns(target, &part_id);
+		retval = target_read_u32(target, NUMICRO_SYS_BASE, &part_id);
+		if (retval != ERROR_OK) {
+			LOG_WARNING("NuMicro flash driver: Failed to Get PartID");
+			return ERROR_FLASH_OPERATION_FAILED;
+		}
 	}
 
 	LOG_INFO("Device ID: 0x%08" PRIx32 "", part_id);
@@ -2307,6 +2470,29 @@ static int numicro_get_cpu_type(struct target *target, const struct numicro_cpu_
 		}
 	}
 
+	/* try again for M2351 */
+	if (m_M23SecureDebugState == 2) {
+		if (strcmp(m_target_name, "M2355") == 0) {
+			retval = target_read_u32(target, NUMICRO_SYS_BASE, &part_id);
+			if (retval != ERROR_OK) {
+				LOG_WARNING("NuMicro flash driver: Failed to Get PartID");
+				return ERROR_FLASH_OPERATION_FAILED;
+			}
+		}
+		else {
+			numicro_M2351_getinitinfo_ns(target, &part_id);
+		}
+
+		LOG_INFO("Device ID: 0x%08" PRIx32 "", part_id);
+		/* search part numbers */
+		for (size_t i = 0; i < sizeof(NuMicroParts) / sizeof(NuMicroParts[0]); i++) {
+			if (part_id == NuMicroParts[i].partid) {
+				*cpu = &NuMicroParts[i];
+				LOG_INFO("Device Name: %s", (*cpu)->partname);
+				return ERROR_OK;
+			}
+		}
+	}
 	LOG_WARNING("NuMicro flash driver: Failed to search PartID. Use 'UNKNOWN' instead.");
 	*cpu = &NuMicroParts[sizeof(NuMicroParts) / sizeof(NuMicroParts[0]) - 1];
 	LOG_INFO("Device Name: %s", (*cpu)->partname);
@@ -2349,11 +2535,11 @@ static int numicro_probe(struct flash_bank *bank)
 
 	/* decide the page size */
 	if (armv7m->arm.is_armv6m) { /* M0 */
-		if (((cpu->partid & 0x00FFF000) == 0x00C56000) ||
-			((cpu->partid & 0x00FFF000) == 0x00C05000) ||
-			((cpu->partid & 0xFFFF0F00) == 0x01130600) ||
-			((cpu->partid & 0xFFFF0F00) == 0x01130100)) {
-			m_pageSize = NUMICRO_PAGESIZE * 4; /* for M0564, NUC126, M031G, and M031I */
+		if (((cpu->partid & 0x00FFF000) == 0x00C56000/* M0564  */) ||
+			((cpu->partid & 0x00FFF000) == 0x00C05000/* NUC126 */) ||
+			((cpu->partid & 0xFFFF0F00) == 0x01130600/* M031G  */) ||
+			((cpu->partid & 0xFFFF0F00) == 0x01130100/* M031I  */)) {
+			m_pageSize = NUMICRO_PAGESIZE * 4;
 		}
 		else {
 			m_pageSize = NUMICRO_PAGESIZE;
@@ -2402,6 +2588,9 @@ static int numicro_probe(struct flash_bank *bank)
 	}
 	else if (cpu->partid == 0x00550505) {
 		m_target_name = "NUC505";
+	}
+	else if ((cpu->partid & 0x00FFFF00) == 0x00235500) {
+		m_target_name = "M2355";
 	}
 	else {
 		m_target_name = "common";
