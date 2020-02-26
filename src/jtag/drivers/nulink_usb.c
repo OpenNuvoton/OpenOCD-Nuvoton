@@ -475,12 +475,37 @@ static int nulink_usb_assert_srst(void *handle, int srst)
 	return res;
 }
 
-static int nulink_usb_reset(void *handle)
+static int nulink_usb_reset(void *handle, uint32_t reset_command)
 {
 	int res;
 	struct nulink_usb_handle_s *h = handle;
 
-	LOG_DEBUG("nulink_usb_reset");
+	switch (reset_command) {
+		case RESET_AUTO:
+			LOG_DEBUG("nulink_usb_reset: RESET_AUTO");
+			break;
+		case RESET_HW:
+			LOG_DEBUG("nulink_usb_reset: RESET_HW");
+			break;
+		case RESET_SYSRESETREQ:
+			LOG_DEBUG("nulink_usb_reset: RESET_SYSRESETREQ");
+			break;
+		case RESET_VECTRESET:
+			LOG_DEBUG("nulink_usb_reset: RESET_VECTRESET");
+			break;
+		case RESET_FAST_RESCUE:
+			LOG_DEBUG("nulink_usb_reset: RESET_FAST_RESCUE");
+			break;
+		case RESET_NONE_NULINK:
+			LOG_DEBUG("nulink_usb_reset: RESET_NONE_NULINK");
+			break;
+		case RESET_NONE2:
+			LOG_DEBUG("nulink_usb_reset: RESET_NONE2");
+			break;
+		default:
+			LOG_DEBUG("nulink_usb_reset: not found");
+			break;
+	}
 
 	assert(handle != NULL);
 
@@ -489,7 +514,7 @@ static int nulink_usb_reset(void *handle)
 	h_u32_to_le(h->cmdbuf + h->cmdidx, CMD_MCU_RESET);
 	h->cmdidx += 4;
 	/* set reset type */
-	h_u32_to_le(h->cmdbuf + h->cmdidx, RESET_AUTO);
+	h_u32_to_le(h->cmdbuf + h->cmdidx, reset_command);
 	h->cmdidx += 4;
 	/* set connect type */
 	h_u32_to_le(h->cmdbuf + h->cmdidx, CONNECT_NORMAL);
@@ -1583,9 +1608,10 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 
 	LOG_DEBUG("nulink_usb_open: we manually perform nulink_usb_reset");
 	nulink_usb_write_debug_reg(h, 0xe000edf0, 0xa05f0001);
-	//nulink_usb_write_debug_reg(h, 0xe000edfc, 0x01000000); /* reset but not halt */
-	//nulink_usb_write_debug_reg(h, 0xe000ed0c, 0x05fa0004);
-	nulink_usb_reset(h);
+	// //nulink_usb_write_debug_reg(h, 0xe000edfc, 0x01000000); /* reset but not halt */
+	// //nulink_usb_write_debug_reg(h, 0xe000ed0c, 0x05fa0004);
+	nulink_usb_reset(h, RESET_HW);
+	nulink_usb_reset(h, RESET_SYSRESETREQ);
 
 	/* get cpuid, so we can determine the max page size
 	* start with a safe default for Cortex-M0*/
