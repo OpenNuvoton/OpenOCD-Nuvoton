@@ -146,8 +146,10 @@ struct numicro_cpu_type {
 static const struct numicro_cpu_type NuMicroParts[] = {
 	/*PART Name*//*PART ID*/ /*Banks*/
 	/* M031 */
-	{"M031SIAAE", 0x01131100, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 8*1024, 12)},
-	{"M032SIAAE", 0x01132100, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 8*1024, 12)},
+	{"M031LIAAE", 0x01131100, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 8*1024, 12)},
+	{"M032LIAAE", 0x01132100, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 8*1024, 12)},
+	{"M031SIAAE", 0x01131110, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 8*1024, 12)},
+	{"M032SIAAE", 0x01132110, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 8*1024, 12)},
 	{"M031KIAAE", 0x01131140, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 8*1024, 12)},
 	{"M032KIAAE", 0x01132140, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 8*1024, 12)},
 	{"M031LG8AE", 0x01131600, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 12)},
@@ -164,9 +166,20 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"M032KG6AE", 0x01132641, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 12)},
 	{"M031LE3AE", 0x01131E00, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
 	{"M031SE3AE", 0x01131E10, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
+	{"M031BTYE3AN", 0x01131E90, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
 	{"M032LE3AE", 0x01132E00, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
 	{"M032SE3AE", 0x01132E10, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
+	{"M032TD2AE", 0x01132DE0, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 2*1024, 12)},
+	{"M032LD2AE", 0x01132D00, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 2*1024, 12)},
+	{"M032TC2AE", 0x01132DE1, NUMICRO_BANKS_GENERAL(32*1024, 0*1024, 2*1024, 12)},
+	{"M032LC2AE", 0x01132D01, NUMICRO_BANKS_GENERAL(32*1024, 0*1024, 2*1024, 12)},
+	{"M030TD2AE", 0x01130DE0, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 2*1024, 12)},
+	{"M030LD2AE", 0x01130D00, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 2*1024, 12)},
+	{"M032FC1AE", 0x01132CB0, NUMICRO_BANKS_GENERAL(32*1024, 0*1024, 2*1024, 12)},
+	{"M032EC1AE", 0x01132CA0, NUMICRO_BANKS_GENERAL(32*1024, 0*1024, 2*1024, 12)},
+	{"M032TC1AE", 0x01132CE0, NUMICRO_BANKS_GENERAL(32*1024, 0*1024, 2*1024, 12)},
 	{"M031TD2AE", 0x01131DE0, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 2*1024, 12)},
+	{"M031BTYD2AN", 0x01131D90, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 2*1024, 12)},
 	{"M031LD2AE", 0x01131D00, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 2*1024, 12)},
 	{"M031LC2AE", 0x01131D01, NUMICRO_BANKS_GENERAL(32*1024, 0*1024, 2*1024, 12)},
 	{"M031SD2AE", 0x01131D10, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 2*1024, 12)},
@@ -553,6 +566,9 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"NUC131SC2AE", 0x10013113, NUMICRO_BANKS_GENERAL(32*1024, 4*1024, 4*1024, 8)},
 	{"NUC131SD2AE", 0x10013110, NUMICRO_BANKS_GENERAL(64*1024, 4*1024, 4*1024, 8)},
 
+	/* NUC1311 */
+	{"NUC1311LD2AE", 0x11413100, NUMICRO_BANKS_GENERAL(64*1024, 4*1024, 4*1024, 8)},
+
 	/* NUC200/220AN */
 	{"NUC200LC2AN", 0x00020007, NUMICRO_BANKS_GENERAL(32*1024, 4*1024, 4*1024, 8)},
 	{"NUC200LD2AN", 0x00020004, NUMICRO_BANKS_GENERAL(64*1024, 4*1024, 4*1024, 8)},
@@ -773,6 +789,11 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"M483SGCAE2A", 0x01348314, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
 	{"M483SG8AE2A", 0x01348315, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
 
+	/* M479 */
+	{"M479SG8AE", 0x01347911, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{"M479LG8AE", 0x01347901, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+	{"M479NG8AE", 0x01347991, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 16)},
+
 	/* NUC505 */
 	{"NUC505", 0x00550505, NUMICRO_BANKS_GENERAL(0x1000000, 0*1024, 0*1024, 0)},
 
@@ -819,8 +840,8 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"M2351ZIAAE", 0x00235103, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 16)},
 	{"M2353SIAAE", 0x00235300, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 16)},
 
-	/* M2355 */
-	{"M2355TEST", 0x00235500, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 16)},
+	/* M2354 */
+	{"M2354TEST", 0x00235500, NUMICRO_BANKS_GENERAL(0x10080000, 0*1024, 4*1024, 16)},
 
 	/* M261 */
 	{"M261ZIAAE", 0x00261000, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
@@ -871,7 +892,7 @@ static int numicro_get_arm_arch(struct target *target)
 		LOG_DEBUG("NuMicro arm architecture: armv8m");
 		m_addressMinusOffset = 0x10000000;
 		if (armv7m->arm.is_armv8mSecureExtend) {
-			// M2351
+			// M2351/M2354
 			if (armv7m->arm.is_armv8mSecureInvasiveDebugAllowed) {
 				m_M23SecureDebugState = 1;
 			}
@@ -1208,7 +1229,7 @@ static const uint8_t numicro_M2351_NS_init_info_code[] = {
 	0x01, 0xbd, 0x11, 0x7f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-static const uint32_t numicro_M2355_flash_algorithm_code[] = {
+static const uint32_t numicro_M2354_flash_algorithm_code[] = {
 	0xE00ABE00, 0x062D780D, 0x24084068, 0xD3000040, 0x1E644058, 0x1C49D1FA, 0x2A001E52, 0x4770D1F2,
 	0x9002b084, 0x92009101, 0x4820e7ff, 0x07c06800, 0xd0012800, 0xe7f8e7ff, 0x6801481d, 0x43112240,
 	0x98026001, 0x6008491b, 0x491b9801, 0x98006008, 0xd1052800, 0x2000e7ff, 0x491843c0, 0xe0036008,
@@ -1334,19 +1355,19 @@ static int numicro_init_isp(struct target *target)
 	}
 
 	if (m_M23SecureDebugState == 2) {
-		if (strcmp(m_target_name, "M2355") == 0) {
+		if (strcmp(m_target_name, "M2354") == 0) {
 			algorithm_init_entry_offset = 0xC9;
 			algorithm_lr = 0x30010001;
 
 			/* allocate working area with init info code */
-			if (target_alloc_working_area(target, sizeof(numicro_M2355_flash_algorithm_code),
+			if (target_alloc_working_area(target, sizeof(numicro_M2354_flash_algorithm_code),
 				&init_algorithm) != ERROR_OK) {
 				LOG_WARNING("no working area available, can't do block memory erase");
 				return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
 			}
 
 			retval = target_write_buffer(target, init_algorithm->address,
-				sizeof(numicro_M2355_flash_algorithm_code), numicro_M2355_flash_algorithm_code);
+				sizeof(numicro_M2354_flash_algorithm_code), numicro_M2354_flash_algorithm_code);
 			if (retval != ERROR_OK)
 				return retval;
 
@@ -1473,7 +1494,6 @@ static int numicro_init_isp(struct target *target)
 	return ERROR_OK;
 }
 
-extern int nulink_usb_assert_reset();
 /* Program LongWord Block Write */
 static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 		uint32_t offset, uint32_t count)
@@ -1587,19 +1607,19 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 				return retval;
 		}
 		else {
-			if (strcmp(m_target_name, "M2355") == 0) {
+			if (strcmp(m_target_name, "M2354") == 0) {
 				algorithm_programPage_entry_offset = 0x1E9;
 				algorithm_lr = 0x30010001;
 
 				/* allocate working area with flash programming code */
-				if (target_alloc_working_area(target, sizeof(numicro_M2355_flash_algorithm_code),
+				if (target_alloc_working_area(target, sizeof(numicro_M2354_flash_algorithm_code),
 					&write_algorithm) != ERROR_OK) {
 					LOG_WARNING("no working area available, can't do block memory writes");
 					return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
 				}
 
 				retval = target_write_buffer(target, write_algorithm->address,
-					sizeof(numicro_M2355_flash_algorithm_code), numicro_M2355_flash_algorithm_code);
+					sizeof(numicro_M2354_flash_algorithm_code), numicro_M2354_flash_algorithm_code);
 				if (retval != ERROR_OK)
 					return retval;
 			}
@@ -1648,7 +1668,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 		return retval;
 	}
 
-	if ((strcmp(m_target_name, "M2355") == 0 && m_M23SecureDebugState == 2) ||
+	if ((strcmp(m_target_name, "M2354") == 0 && m_M23SecureDebugState == 2) ||
 		 strcmp(m_target_name, "M480") == 0) {
 		init_reg_param(&reg_params[0], "r0", 32, PARAM_OUT);    /* faddr */
 		init_reg_param(&reg_params[1], "r1", 32, PARAM_OUT);    /* number of words to program */
@@ -2209,19 +2229,19 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 		}
 	}
 	else { // m_M23SecureDebugState == 2
-		if (strcmp(m_target_name, "M2355") == 0) {
+		if (strcmp(m_target_name, "M2354") == 0) {
 			algorithm_eraseSector_entry_offset = 0x151;
 			algorithm_lr = 0x30010001;
 
 			/* allocate working area with flash erase code */
-			if (target_alloc_working_area(target, sizeof(numicro_M2355_flash_algorithm_code),
+			if (target_alloc_working_area(target, sizeof(numicro_M2354_flash_algorithm_code),
 				&erase_algorithm) != ERROR_OK) {
 				LOG_WARNING("no working area available, can't do block memory erase");
 				return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
 			}
 
 			retval = target_write_buffer(target, erase_algorithm->address,
-				sizeof(numicro_M2355_flash_algorithm_code), numicro_M2355_flash_algorithm_code);
+				sizeof(numicro_M2354_flash_algorithm_code), numicro_M2354_flash_algorithm_code);
 			if (retval != ERROR_OK)
 				return retval;
 
@@ -2470,17 +2490,17 @@ static int numicro_get_cpu_type(struct target *target, const struct numicro_cpu_
 		}
 	}
 
-	/* try again for M2351 */
+	/* try again for M23 series */
 	if (m_M23SecureDebugState == 2) {
-		if (strcmp(m_target_name, "M2355") == 0) {
+		if (strcmp(m_target_name, "M2351") == 0) {
+			numicro_M2351_getinitinfo_ns(target, &part_id);
+		}
+		else {
 			retval = target_read_u32(target, NUMICRO_SYS_BASE, &part_id);
 			if (retval != ERROR_OK) {
 				LOG_WARNING("NuMicro flash driver: Failed to Get PartID");
 				return ERROR_FLASH_OPERATION_FAILED;
 			}
-		}
-		else {
-			numicro_M2351_getinitinfo_ns(target, &part_id);
 		}
 
 		LOG_INFO("Device ID: 0x%08" PRIx32 "", part_id);
@@ -2590,7 +2610,7 @@ static int numicro_probe(struct flash_bank *bank)
 		m_target_name = "NUC505";
 	}
 	else if ((cpu->partid & 0x00FFFF00) == 0x00235500) {
-		m_target_name = "M2355";
+		m_target_name = "M2354";
 	}
 	else {
 		m_target_name = "common";
