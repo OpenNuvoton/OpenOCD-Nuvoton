@@ -847,14 +847,18 @@ COMMAND_HANDLER(ftdi_handle_set_signal_command)
 
 	switch (*CMD_ARGV[1]) {
 	case '0':
+		/* Fall through. */
 	case '1':
+		/* Fall through. */
 	case 'z':
+		/* Fall through. */
 	case 'Z':
 		/* single character level specifier only */
 		if (CMD_ARGV[1][1] == '\0') {
 			ftdi_set_signal(sig, *CMD_ARGV[1]);
 			break;
 		}
+		/* Fall through. */
 	default:
 		LOG_ERROR("unknown signal level '%s', use 0, 1 or z", CMD_ARGV[1]);
 		return ERROR_COMMAND_SYNTAX_ERROR;

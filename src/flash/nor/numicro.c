@@ -1497,7 +1497,7 @@ static int numicro_init_isp(struct target *target)
 			}
 
 			retval = target_write_buffer(target, init_algorithm->address,
-				sizeof(numicro_M2354_NS_flash_algorithm_code), numicro_M2354_NS_flash_algorithm_code);
+				sizeof(numicro_M2354_NS_flash_algorithm_code), (const uint8_t *)numicro_M2354_NS_flash_algorithm_code);
 			if (retval != ERROR_OK)
 				return retval;
 
@@ -1547,7 +1547,7 @@ static int numicro_init_isp(struct target *target)
 		}
 
 		retval = target_write_buffer(target, init_algorithm->address,
-			sizeof(numicro_NUC505_flash_algorithm_code), numicro_NUC505_flash_algorithm_code);
+			sizeof(numicro_NUC505_flash_algorithm_code), (const uint8_t *)numicro_NUC505_flash_algorithm_code);
 		if (retval != ERROR_OK)
 			return retval;
 
@@ -1631,7 +1631,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 	struct target *target = bank->target;
 	uint32_t buffer_size = 1024; /* Default minimum value */
 	uint32_t totalCount = count;
-	uint32_t thisrun_count;
+	uint32_t thisrun_count = 0;
 	struct working_area *write_algorithm;
 	struct working_area *source;
 	struct working_area *source2;
@@ -1642,7 +1642,6 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 	uint32_t algorithm_programPage_entry_offset = 0;
 	uint32_t algorithm_lr = 0;
 	bool bSPIMFlashWrite = (bank->base + offset < NUMICRO_SPIM_FLASH_START_ADDRESS)? 0 : 1;
-	uint32_t status;
 	int retval = ERROR_OK;
 
 	/* Params:
@@ -1701,7 +1700,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 				}
 
 				retval = target_write_buffer(target, write_algorithm->address,
-					sizeof(numicro_M480_spim_flash_algorithm_code), numicro_M480_spim_flash_algorithm_code);
+					sizeof(numicro_M480_spim_flash_algorithm_code), (const uint8_t *)numicro_M480_spim_flash_algorithm_code);
 				if (retval != ERROR_OK)
 					return retval;
 			}
@@ -1717,7 +1716,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 				}
 
 				retval = target_write_buffer(target, write_algorithm->address,
-					sizeof(numicro_M480_flash_algorithm_code), numicro_M480_flash_algorithm_code);
+					sizeof(numicro_M480_flash_algorithm_code), (const uint8_t *)numicro_M480_flash_algorithm_code);
 				if (retval != ERROR_OK)
 					return retval;
 			}
@@ -1735,7 +1734,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			}
 
 			retval = target_write_buffer(target, write_algorithm->address,
-				sizeof(numicro_NUC505_flash_algorithm_code), numicro_NUC505_flash_algorithm_code);
+				sizeof(numicro_NUC505_flash_algorithm_code), (const uint8_t *)numicro_NUC505_flash_algorithm_code);
 			if (retval != ERROR_OK)
 				return retval;
 		}
@@ -1765,7 +1764,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 				}
 
 				retval = target_write_buffer(target, write_algorithm->address,
-					sizeof(numicro_M2354_NS_flash_algorithm_code), numicro_M2354_NS_flash_algorithm_code);
+					sizeof(numicro_M2354_NS_flash_algorithm_code), (const uint8_t *)numicro_M2354_NS_flash_algorithm_code);
 				if (retval != ERROR_OK)
 					return retval;
 			}
@@ -2392,7 +2391,7 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 		}
 
 		retval = target_write_buffer(target, erase_algorithm->address,
-			sizeof(numicro_M480_spim_flash_algorithm_code), numicro_M480_spim_flash_algorithm_code);
+			sizeof(numicro_M480_spim_flash_algorithm_code), (const uint8_t *)numicro_M480_spim_flash_algorithm_code);
 		if (retval != ERROR_OK)
 			return retval;
 
@@ -2518,7 +2517,7 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 		}
 
 		retval = target_write_buffer(target, erase_algorithm->address,
-			sizeof(numicro_NUC505_flash_algorithm_code), numicro_NUC505_flash_algorithm_code);
+			sizeof(numicro_NUC505_flash_algorithm_code), (const uint8_t *)numicro_NUC505_flash_algorithm_code);
 		if (retval != ERROR_OK)
 			return retval;
 
@@ -2662,7 +2661,7 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 			}
 
 			retval = target_write_buffer(target, erase_algorithm->address,
-				sizeof(numicro_M2354_NS_flash_algorithm_code), numicro_M2354_NS_flash_algorithm_code);
+				sizeof(numicro_M2354_NS_flash_algorithm_code), (const uint8_t *)numicro_M2354_NS_flash_algorithm_code);
 			if (retval != ERROR_OK)
 				return retval;
 
@@ -3205,7 +3204,7 @@ COMMAND_HANDLER(numicro_handle_chip_erase_command)
 	return ERROR_OK;
 }
 
-extern int nulink_usb_M2351_erase();
+int nulink_usb_M2351_erase(void);
 COMMAND_HANDLER(numicro_handle_M2351_erase_command)
 {
 	int retval = ERROR_OK;

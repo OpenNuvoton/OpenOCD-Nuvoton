@@ -74,6 +74,7 @@ struct nulink_usb_handle_s {
 	uint32_t max_mem_packet;
 	enum hl_transports transport;
 	uint16_t hardwareConfig; /* bit 0: 1:Nu-Link-Pro, 0:Normal Nu-Link | bit 1: 1:Nu-Link2, 0:Nu-Link */
+	uint32_t reset_command;
 } *m_nulink_usb_handle;
 
 struct nulink_usb_internal_api_s {
@@ -475,12 +476,12 @@ static int nulink_usb_assert_srst(void *handle, int srst)
 	return res;
 }
 
-static int nulink_usb_reset(void *handle, uint32_t reset_command)
+static int nulink_usb_reset(void *handle)
 {
 	int res;
 	struct nulink_usb_handle_s *h = handle;
 
-	switch (reset_command) {
+	switch (h->reset_command) {
 		case RESET_AUTO:
 			LOG_DEBUG("nulink_usb_reset: RESET_AUTO");
 			break;
@@ -514,7 +515,7 @@ static int nulink_usb_reset(void *handle, uint32_t reset_command)
 	h_u32_to_le(h->cmdbuf + h->cmdidx, CMD_MCU_RESET);
 	h->cmdidx += 4;
 	/* set reset type */
-	h_u32_to_le(h->cmdbuf + h->cmdidx, reset_command);
+	h_u32_to_le(h->cmdbuf + h->cmdidx, h->reset_command);
 	h->cmdidx += 4;
 	/* set connect type */
 	h_u32_to_le(h->cmdbuf + h->cmdidx, CONNECT_NORMAL);
@@ -528,7 +529,7 @@ static int nulink_usb_reset(void *handle, uint32_t reset_command)
 	return res;
 }
 
-int nulink_usb_M2351_erase()
+int nulink_usb_M2351_erase(void)
 {
 	int res = ERROR_FAIL;
 	struct nulink_usb_handle_s *h = m_nulink_usb_handle;
@@ -589,7 +590,7 @@ int nulink_usb_M2351_erase()
 	return res;
 }
 
-int nulink_usb_assert_reset()
+int nulink_usb_assert_reset(void)
 {
 	int res;
 	struct nulink_usb_handle_s *h = m_nulink_usb_handle;
@@ -1396,7 +1397,6 @@ static int nulink_speed(void *handle, int khz, bool query)
 
 static int nulink_usb_close(void *handle)
 {
-	int res;
 	struct nulink_usb_handle_s *h = handle;
 
 	LOG_DEBUG("nulink_usb_close");
@@ -1417,7 +1417,7 @@ static int nulink_usb_close(void *handle)
 		h_u32_to_le(h->cmdbuf + h->cmdidx, 0);
 		h->cmdidx += 4;
 
-		res = m_nulink_usb_api.nulink_usb_xfer(handle, h->databuf, 4 * 1);
+		m_nulink_usb_api.nulink_usb_xfer(handle, h->databuf, 4 * 1);
 	}
 
 	// if (h && h->fd)
@@ -1522,7 +1522,7 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 			h->rx_ep = NULINK2_RX_EP;
 			h->tx_ep = NULINK2_TX_EP;
 			h->max_packet_size = jtag_libusb_get_maxPacketSize(h->fd, 0, h->interface_num);
-			if (h->max_packet_size == -1) {
+			if (h->max_packet_size == (uint16_t)-1) {
 				h->max_packet_size = NULINK2_HID_MAX_SIZE;
 			}
 			LOG_DEBUG("max_packet_size: %d", h->max_packet_size);
@@ -1542,7 +1542,7 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 			h->rx_ep = NULINK_RX_EP;
 			h->tx_ep = NULINK_TX_EP;
 			h->max_packet_size = jtag_libusb_get_maxPacketSize(h->fd, 0, h->interface_num);
-			if (h->max_packet_size == -1) {
+			if (h->max_packet_size == (uint16_t)-1) {
 				h->max_packet_size = NULINK_HID_MAX_SIZE;
 			}
 			LOG_DEBUG("max_packet_size: %d", h->max_packet_size);
@@ -1610,8 +1610,10 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 	nulink_usb_write_debug_reg(h, 0xe000edf0, 0xa05f0001);
 	// //nulink_usb_write_debug_reg(h, 0xe000edfc, 0x01000000); /* reset but not halt */
 	// //nulink_usb_write_debug_reg(h, 0xe000ed0c, 0x05fa0004);
-	nulink_usb_reset(h, RESET_HW);
-	nulink_usb_reset(h, RESET_SYSRESETREQ);
+	h->reset_command = RESET_HW;
+	nulink_usb_reset(h);
+	h->reset_command = RESET_SYSRESETREQ;
+	nulink_usb_reset(h);
 
 	/* get cpuid, so we can determine the max page size
 	* start with a safe default for Cortex-M0*/

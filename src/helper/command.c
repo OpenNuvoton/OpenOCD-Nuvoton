@@ -815,44 +815,48 @@ static COMMAND_HELPER(command_help_show, struct command *c, unsigned n,
 static COMMAND_HELPER(command_help_show_list, struct command *head, unsigned n,
 	bool show_help, const char *cmd_match)
 {
+	enum
+	{
+		cmd_match_number = 19
+	};
+
 	bool is_match = (strstr(cmd_match, "nuvoton") != NULL);
-	const cmd_match_number = 19;
 	const char *cmd_match_names[cmd_match_number];
 	int index = 0;
-	
+
 	cmd_match_names[index++] = "reset";
 	cmd_match_names[index++] = "halt";
 	cmd_match_names[index++] = "resume";
 	cmd_match_names[index++] = "step";
-	
+
 	cmd_match_names[index++] = "bp";
 	cmd_match_names[index++] = "rbp";
 	cmd_match_names[index++] = "wp";
 	cmd_match_names[index++] = "rwp";
-	
+
 	cmd_match_names[index++] = "reg";
-	
+
 	cmd_match_names[index++] = "mdb";
-	cmd_match_names[index++] = "mdh";	
-	cmd_match_names[index++] = "mdw";	
-	
-	cmd_match_names[index++] = "mwb";	
+	cmd_match_names[index++] = "mdh";
+	cmd_match_names[index++] = "mdw";
+
+	cmd_match_names[index++] = "mwb";
 	cmd_match_names[index++] = "mwh";
-	cmd_match_names[index++] = "mww";		
-	
+	cmd_match_names[index++] = "mww";
+
 	cmd_match_names[index++] = "numicro";
-	
+
 	cmd_match_names[index++] = "flash";
-	
+
 	cmd_match_names[index++] = "debug_level";
 	cmd_match_names[index++] = "shutdown";
 
 	assert(index == cmd_match_number);
-	
+
 	if (is_match) {
 		for (unsigned i = 0; i < cmd_match_number; i++) {
 			cmd_match = alloc_printf("%s", cmd_match_names[i]);
-			
+
 			for (struct command *c = head; NULL != c; c = c->next)
 				CALL_COMMAND_HANDLER(command_help_show, c, n, show_help, cmd_match);
 		}
@@ -907,20 +911,20 @@ static COMMAND_HELPER(command_help_show, struct command *c, unsigned n,
 
 	bool is_match_strict = (strcmp(cmd_name, cmd_match) == 0);
 
-	if ((n == 0 && is_match_strict) || 
-		(n == 1 && is_match) || 
-		(n == 2 && is_match) || 
-		(n == 3 && is_match) || 
+	if ((n == 0 && is_match_strict) ||
+		(n == 1 && is_match) ||
+		(n == 2 && is_match) ||
+		(n == 3 && is_match) ||
 		(n == 4 && is_match)) {
 		command_help_show_indent(n);
 		LOG_USER_N("%s", cmd_name);
 	}
 	free(cmd_name);
 
-	if ((n == 0 && is_match_strict) || 
-		(n == 1 && is_match) || 
-		(n == 2 && is_match) || 
-		(n == 3 && is_match) || 
+	if ((n == 0 && is_match_strict) ||
+		(n == 1 && is_match) ||
+		(n == 2 && is_match) ||
+		(n == 3 && is_match) ||
 		(n == 4 && is_match)) {
 		if (c->usage && strlen(c->usage) > 0) {
 			LOG_USER_N(" ");
@@ -929,10 +933,10 @@ static COMMAND_HELPER(command_help_show, struct command *c, unsigned n,
 			LOG_USER_N("\n");
 	}
 
-	if (((n == 0 && is_match_strict) || 
-		(n == 1 && is_match) || 
-		(n == 2 && is_match) || 
-		(n == 3 && is_match) ||	
+	if (((n == 0 && is_match_strict) ||
+		(n == 1 && is_match) ||
+		(n == 2 && is_match) ||
+		(n == 3 && is_match) ||
 		(n == 4 && is_match)) && show_help) {
 		char *msg;
 
@@ -967,10 +971,10 @@ static COMMAND_HELPER(command_help_show, struct command *c, unsigned n,
 		return ERROR_FAIL;
 	}
 
-	if ((n - 1 == 0 && is_match_strict) || 
-		(n - 1 == 1 && is_match) || 
-		(n - 1 == 2 && is_match) || 
-		(n - 1 == 3 && is_match) || 
+	if ((n - 1 == 0 && is_match_strict) ||
+		(n - 1 == 1 && is_match) ||
+		(n - 1 == 2 && is_match) ||
+		(n - 1 == 3 && is_match) ||
 		(n - 1 == 4 && is_match)) {
 	return CALL_COMMAND_HANDLER(command_help_show_list,
 		c->children, n, show_help, cmd_match);
@@ -1522,8 +1526,8 @@ COMMAND_HELPER(handle_command_parse_bool, bool *out, const char *label)
 				LOG_ERROR("%s: argument '%s' is not valid", CMD_NAME, in);
 				return ERROR_COMMAND_SYNTAX_ERROR;
 			}
-			/* fall through */
 		}
+			/* fall through */
 		case 0:
 			LOG_INFO("%s is %s", label, *out ? "enabled" : "disabled");
 			break;
