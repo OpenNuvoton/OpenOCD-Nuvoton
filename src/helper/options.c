@@ -2,7 +2,7 @@
  *   Copyright (C) 2004, 2005 by Dominic Rath                              *
  *   Dominic.Rath@gmx.de                                                   *
  *                                                                         *
- *   Copyright (C) 2007-2010 Øyvind Harboe                                 *
+ *   Copyright (C) 2007-2010 ?yvind Harboe                                 *
  *   oyvind.harboe@zylin.com                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -84,9 +84,15 @@ static void add_default_dirs(void)
 			*p = '/';
 	}
 
+#if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
+	char *end_of_prefix = find_suffix(strExePath, "bin");
+	if (end_of_prefix != NULL)
+		*end_of_prefix = '\0';
+#else
 	char *end_of_prefix = find_suffix(strExePath, BINDIR);
 	if (end_of_prefix != NULL)
 		*end_of_prefix = '\0';
+#endif
 
 	run_prefix = strExePath;
 #else
@@ -129,6 +135,19 @@ static void add_default_dirs(void)
 	}
 #endif
 
+#if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
+	path = alloc_printf("%s%s", run_prefix, "/site");
+	if (path) {
+		add_script_search_dir(path);
+		free(path);
+	}
+
+	path = alloc_printf("%s%s", run_prefix, "/scripts");
+	if (path) {
+		add_script_search_dir(path);
+		free(path);
+	}
+#else
 	path = alloc_printf("%s%s%s", run_prefix, PKGDATADIR, "/site");
 	if (path) {
 		add_script_search_dir(path);
@@ -140,6 +159,7 @@ static void add_default_dirs(void)
 		add_script_search_dir(path);
 		free(path);
 	}
+#endif
 }
 
 int parse_cmdline_args(struct command_context *cmd_ctx, int argc, char *argv[])
