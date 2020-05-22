@@ -1607,9 +1607,6 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 	nulink_speed(h, 1000, false);
 
 	LOG_DEBUG("nulink_usb_open: we manually perform nulink_usb_reset");
-	nulink_usb_write_debug_reg(h, 0xe000edf0, 0xa05f0001);
-	// //nulink_usb_write_debug_reg(h, 0xe000edfc, 0x01000000); /* reset but not halt */
-	// //nulink_usb_write_debug_reg(h, 0xe000ed0c, 0x05fa0004);
 	h->reset_command = RESET_HW;
 	nulink_usb_reset(h);
 	h->reset_command = RESET_SYSRESETREQ;
