@@ -816,12 +816,12 @@ static int jim_nds32_bulk_read(Jim_Interp *interp, int argc, Jim_Obj * const *ar
 	uint32_t *data = malloc(count * sizeof(uint32_t));
 	int result;
 	result = target_read_buffer(target, address, count * 4, (uint8_t *)data);
-	char data_str[11];
+	char data_str[20];
 
 	jim_wide i;
 	Jim_SetResult(interp, Jim_NewEmptyStringObj(interp));
 	for (i = 0; i < count; i++) {
-		sprintf(data_str, "0x%08" PRIx32 " ", data[i]);
+		sprintf(data_str, "0x%08X" PRIx32 " ", data[i]);
 		Jim_AppendStrings(interp, Jim_GetResult(interp), data_str, NULL);
 	}
 
@@ -1123,4 +1123,3 @@ const struct command_registration nds32_command_handlers[] = {
 	},
 	COMMAND_REGISTRATION_DONE
 };
-

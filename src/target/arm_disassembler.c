@@ -1496,7 +1496,7 @@ static int evaluate_misc_instr(uint32_t opcode,
 		}
 
 		/* SMLAW < y> */
-		if (((opcode & 0x00600000) == 0x00100000) && (x == 0)) {
+		if (((opcode & 0x00600000) == 0x00200000) && (x == 0)) {
 			uint8_t Rd, Rm, Rs, Rn;
 			instruction->type = ARM_SMLAWy;
 			Rd = (opcode & 0xf0000) >> 16;
@@ -1518,7 +1518,7 @@ static int evaluate_misc_instr(uint32_t opcode,
 		}
 
 		/* SMUL < x><y> */
-		if ((opcode & 0x00600000) == 0x00300000) {
+		if ((opcode & 0x00600000) == 0x00600000) {
 			uint8_t Rd, Rm, Rs;
 			instruction->type = ARM_SMULxy;
 			Rd = (opcode & 0xf0000) >> 16;
@@ -1539,7 +1539,7 @@ static int evaluate_misc_instr(uint32_t opcode,
 		}
 
 		/* SMULW < y> */
-		if (((opcode & 0x00600000) == 0x00100000) && (x == 1)) {
+		if (((opcode & 0x00600000) == 0x00200000) && (x == 1)) {
 			uint8_t Rd, Rm, Rs;
 			instruction->type = ARM_SMULWy;
 			Rd = (opcode & 0xf0000) >> 16;
@@ -3299,6 +3299,7 @@ static int t2ev_data_immed(uint32_t opcode, uint32_t address,
 		case 0x10:
 		case 0x12:
 			is_signed = true;
+			/* Fall through. */
 		case 0x18:
 		case 0x1a:
 			/* signed/unsigned saturated add */

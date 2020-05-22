@@ -1249,6 +1249,12 @@ int cortex_m_unset_breakpoint(struct target *target, struct breakpoint *breakpoi
 
 int cortex_m_add_breakpoint(struct target *target, struct breakpoint *breakpoint)
 {
+	enum
+	{
+		ARM_16BIT_THUMB = 2,
+		ARM_32BIT_THUMB,
+		ARM_32BIT_MODE
+	};
 	struct cortex_m_common *cortex_m = target_to_cm(target);
 
 	if (cortex_m->auto_bp_type)
@@ -1271,13 +1277,13 @@ int cortex_m_add_breakpoint(struct target *target, struct breakpoint *breakpoint
 		return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
 	}
 
-	if (breakpoint->length == 3) {
+	if (breakpoint->length == ARM_32BIT_THUMB) {
 		LOG_DEBUG("Using a two byte breakpoint for 32bit Thumb-2 request");
-		breakpoint->length = 2;
+		breakpoint->length = ARM_16BIT_THUMB;
 	}
 
-	if ((breakpoint->length != 2)) {
-		LOG_INFO("only breakpoints of two bytes length supported");
+	if ((breakpoint->length != ARM_16BIT_THUMB)) {
+		LOG_INFO("only thumb mode (16-bit or 32-bit) breakpoints are supported");
 		return ERROR_TARGET_RESOURCE_NOT_AVAILABLE;
 	}
 
@@ -2016,7 +2022,7 @@ int cortex_m_examine(struct target *target)
 		} else if (i == 0) {
 			/* Cortex-M0 does not support unaligned memory access */
 			armv7m->arm.is_armv6m = true;
-			
+
 			retval = target_read_u32(target, NUC_M0_FLASH_VERSION, &regValue);
 			if (retval != ERROR_OK) {
 				LOG_ERROR("Could not read the value of NUC_M0_FLASH_VERSION");
@@ -2032,9 +2038,9 @@ int cortex_m_examine(struct target *target)
 				}
 			}
 		} else if (i == 23) {
-			armv7m->arm.is_armv8m = true;			
+			armv7m->arm.is_armv8m = true;
 			armv7m->arm.is_armv8mSecureExtend = true;
-			
+
 			retval = target_read_u32(target, V8M_DAUTHSTATUS, &regValue);
 			if (retval != ERROR_OK) {
 				LOG_ERROR("Could not read the value of DAUTHSTATUS");
@@ -2049,7 +2055,7 @@ int cortex_m_examine(struct target *target)
 					armv7m->arm.is_armv8mSecureExtend = false;
 				}
 			}
-			
+
 			armv7m->arm.is_armv8mSecureInvasiveDebugAllowed = true;
 			retval = target_read_u32(target, DCB_DHCSR, &regValue);
 			if (retval != ERROR_OK) {
@@ -2063,8 +2069,8 @@ int cortex_m_examine(struct target *target)
 				else {
 					LOG_DEBUG("Secure invasive debug prohibited(DHCSR: 0x%" PRIx32 ").", regValue);
 					armv7m->arm.is_armv8mSecureInvasiveDebugAllowed = false;
-				}		
-			}			
+				}
+			}
 		}
 
 		if (armv7m->fp_feature == FP_NONE &&

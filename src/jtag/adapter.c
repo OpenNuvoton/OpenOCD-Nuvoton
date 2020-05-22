@@ -393,6 +393,8 @@ next:
 		modes[5] = "";
 	}
 
+	(void)modes;
+
 	// command_print(CMD_CTX, "%s %s%s%s%s%s",
 			// modes[0], modes[1],
 			// modes[2], modes[3], modes[4], modes[5]);
