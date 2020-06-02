@@ -75,6 +75,7 @@ struct nulink_usb_handle_s {
 	enum hl_transports transport;
 	uint16_t hardwareConfig; /* bit 0: 1:Nu-Link-Pro, 0:Normal Nu-Link | bit 1: 1:Nu-Link2, 0:Nu-Link */
 	uint32_t reset_command;
+	uint32_t extMode_command;
 } *m_nulink_usb_handle;
 
 struct nulink_usb_internal_api_s {
@@ -92,8 +93,8 @@ struct nulink_usb_internal_api_s {
 #define CMD_MCU_STOP_RUN			0xD2UL
 #define CMD_MCU_FREE_RUN			0xD3UL
 #define CMD_SET_CONFIG				0xA2UL
-#define CMD_ERASE_FLASHCHIP         0xA4UL
-#define ARM_SRAM_BASE				0x20000000
+#define CMD_ERASE_FLASHCHIP			0xA4UL
+#define ARM_SRAM_BASE				0x20000000UL
 
 #define HARDWARECONFIG_NULINKPRO    1
 #define HARDWARECONFIG_NULINK2      2
@@ -123,6 +124,12 @@ enum CONNECT_E {
 	CONNECT_NONE = 3,        /* Support RESET_HW, (RESET_AUTO = RESET_HW) */
 	CONNECT_DISCONNECT = 4,  /* Support RESET_NONE, (RESET_AUTO = RESET_NONE) */
 	CONNECT_ICP_MODE = 5     /* Support NUC505 ICP mode*/
+};
+
+enum EXTMODE_E {
+	EXTMODE_NORMAL = 0,        /* Support the most of Nuvoton chips */
+	EXTMODE_M0A21  = 0x100,    /* Support M0A21 */
+	EXTMODE_M030G  = 0x10000 , /* Support M030G */
 };
 
 #ifdef SHOW_BUFFER
@@ -158,7 +165,7 @@ static void nulink_usb_init_buffer(void *handle, uint32_t size);
 static int nulink_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 {
 	struct nulink_usb_handle_s *h = handle;
-	int startTime = GetTickCount(), cmdID;
+	int res = ERROR_OK, startTime = GetTickCount(), cmdID;
 	assert(handle != NULL);
 #if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 	jtag_libusb_nuvoton_mutex_lock();
@@ -178,6 +185,7 @@ static int nulink_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 #endif
 		if(GetTickCount() - startTime > USBCMD_TIMEOUT)
 		{
+			res = ERROR_FAIL;
 			break;
 		}
 		cmdID = h->cmdbuf[2];
@@ -188,13 +196,13 @@ static int nulink_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 #if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 	jtag_libusb_nuvoton_mutex_unlock();
 #endif
-	return ERROR_OK;
+	return res;
 }
 
 static int nulink2_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 {
 	struct nulink_usb_handle_s *h = handle;
-	int startTime = GetTickCount(), cmdID;
+	int res = ERROR_OK, startTime = GetTickCount(), cmdID;
 	assert(handle != NULL);
 #if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 	jtag_libusb_nuvoton_mutex_lock();
@@ -214,6 +222,7 @@ static int nulink2_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 #endif
 		if(GetTickCount() - startTime > USBCMD_TIMEOUT)
 		{
+			res = ERROR_FAIL;
 			break;
 		}
 		cmdID = h->cmdbuf[3];
@@ -224,7 +233,7 @@ static int nulink2_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 #if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 	jtag_libusb_nuvoton_mutex_unlock();
 #endif
-	return ERROR_OK;
+	return res;
 }
 
 static int nulink_usb_xfer(void *handle, uint8_t *buf, int size)
@@ -468,7 +477,7 @@ static int nulink_usb_assert_srst(void *handle, int srst)
 	h_u32_to_le(h->cmdbuf + h->cmdidx, CONNECT_NORMAL);
 	h->cmdidx += 4;
 	/* set extMode */
-	h_u32_to_le(h->cmdbuf + h->cmdidx, 0);
+	h_u32_to_le(h->cmdbuf + h->cmdidx, h->extMode_command);
 	h->cmdidx += 4;
 
 	res = m_nulink_usb_api.nulink_usb_xfer(handle, h->databuf, 4 * 1);
@@ -504,7 +513,22 @@ static int nulink_usb_reset(void *handle)
 			LOG_DEBUG("nulink_usb_reset: RESET_NONE2");
 			break;
 		default:
-			LOG_DEBUG("nulink_usb_reset: not found");
+			LOG_DEBUG("nulink_usb_reset: reset_command not found");
+			break;
+	}
+
+	switch (h->extMode_command) {
+		case EXTMODE_NORMAL:
+			LOG_DEBUG("nulink_usb_reset: EXTMODE_NORMAL");
+			break;
+		case EXTMODE_M0A21:
+			LOG_DEBUG("nulink_usb_reset: EXTMODE_M0A21");
+			break;
+		case EXTMODE_M030G:
+			LOG_DEBUG("nulink_usb_reset: EXTMODE_M030G");
+			break;
+		default:
+			LOG_DEBUG("nulink_usb_reset: extMode_command not found");
 			break;
 	}
 
@@ -521,7 +545,7 @@ static int nulink_usb_reset(void *handle)
 	h_u32_to_le(h->cmdbuf + h->cmdidx, CONNECT_NORMAL);
 	h->cmdidx += 4;
 	/* set extMode */
-	h_u32_to_le(h->cmdbuf + h->cmdidx, 0);
+	h_u32_to_le(h->cmdbuf + h->cmdidx, h->extMode_command);
 	h->cmdidx += 4;
 
 	res = m_nulink_usb_api.nulink_usb_xfer(handle, h->databuf, 4 * 1);
@@ -608,7 +632,7 @@ int nulink_usb_assert_reset(void)
 	h_u32_to_le(h->cmdbuf + h->cmdidx, CONNECT_NORMAL);
 	h->cmdidx += 4;
 	/* set extMode */
-	h_u32_to_le(h->cmdbuf + h->cmdidx, 0);
+	h_u32_to_le(h->cmdbuf + h->cmdidx, h->extMode_command);
 	h->cmdidx += 4;
 
 	res = m_nulink_usb_api.nulink_usb_xfer(m_nulink_usb_handle, h->databuf, 4 * 1);
@@ -1414,7 +1438,7 @@ static int nulink_usb_close(void *handle)
 		h_u32_to_le(h->cmdbuf + h->cmdidx, CONNECT_DISCONNECT);
 		h->cmdidx += 4;
 		/* set extMode */
-		h_u32_to_le(h->cmdbuf + h->cmdidx, 0);
+		h_u32_to_le(h->cmdbuf + h->cmdidx, h->extMode_command);
 		h->cmdidx += 4;
 
 		m_nulink_usb_api.nulink_usb_xfer(handle, h->databuf, 4 * 1);
@@ -1608,7 +1632,17 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 
 	LOG_DEBUG("nulink_usb_open: we manually perform nulink_usb_reset");
 	h->reset_command = RESET_HW;
-	nulink_usb_reset(h);
+	h->extMode_command = EXTMODE_NORMAL;
+	if (nulink_usb_reset(h) != ERROR_OK) {
+		h->extMode_command = EXTMODE_M0A21;
+		if (nulink_usb_reset(h) != ERROR_OK) {
+			h->extMode_command = EXTMODE_M030G;
+			if (nulink_usb_reset(h) != ERROR_OK) {
+				LOG_ERROR("nulink_usb_reset failed");
+				goto error_open;
+			}
+		}
+	}
 	h->reset_command = RESET_SYSRESETREQ;
 	nulink_usb_reset(h);
 
