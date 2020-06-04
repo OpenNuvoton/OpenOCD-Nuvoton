@@ -308,7 +308,7 @@ static int nulink_usb_version(void *handle)
 	h->cmdbuf[h->cmdidx + 4] = (char)0xA1; /* host_rev_num: 6561 */;
 	h->cmdbuf[h->cmdidx + 5] = (char)0x19;
 
-	res = m_nulink_usb_api.nulink_usb_xfer(handle, h->databuf, 4 * 5);
+	res = m_nulink_usb_api.nulink_usb_xfer(handle, h->databuf, 4 * 6);
 
 	if (res != ERROR_OK)
 		return res;
@@ -1454,7 +1454,7 @@ static int nulink_usb_close(void *handle)
 
 static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 {
-	int err, retry_count = 1, result = 0;
+	int err, result = 0;
 	struct nulink_usb_handle_s *h;
 
 	LOG_DEBUG("nulink_usb_open");
@@ -1536,96 +1536,72 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 			param->serial ? param->serial : "");
 	}
 
-	do {
-		/* get the Nu-Link version */
-		if (jtag_libusb_open(vid_nulink2, pid_nulink2, serial, &h->fd) == ERROR_OK) {
-			h->hardwareConfig = (h->hardwareConfig & ~(HARDWARECONFIG_NULINK2)) | HARDWARECONFIG_NULINK2;
-			m_nulink_usb_api.nulink_usb_xfer = nulink2_usb_xfer;
-			m_nulink_usb_api.nulink_usb_init_buffer = nulink2_usb_init_buffer;
-			h->interface_num = NULINK2_INTERFACE_NUM;
-			h->rx_ep = NULINK2_RX_EP;
-			h->tx_ep = NULINK2_TX_EP;
-			h->max_packet_size = jtag_libusb_get_maxPacketSize(h->fd, 0, h->interface_num);
-			if (h->max_packet_size == (uint16_t)-1) {
-				h->max_packet_size = NULINK2_HID_MAX_SIZE;
-			}
-			LOG_DEBUG("max_packet_size: %d", h->max_packet_size);
-			LOG_INFO("NULINK is Nu-Link2");
+	/* get the Nu-Link version */
+	if (jtag_libusb_open(vid_nulink2, pid_nulink2, serial, &h->fd) == ERROR_OK) {
+		h->hardwareConfig = (h->hardwareConfig & ~(HARDWARECONFIG_NULINK2)) | HARDWARECONFIG_NULINK2;
+		m_nulink_usb_api.nulink_usb_xfer = nulink2_usb_xfer;
+		m_nulink_usb_api.nulink_usb_init_buffer = nulink2_usb_init_buffer;
+		h->interface_num = NULINK2_INTERFACE_NUM;
+		h->rx_ep = NULINK2_RX_EP;
+		h->tx_ep = NULINK2_TX_EP;
+		h->max_packet_size = jtag_libusb_get_maxPacketSize(h->fd, 0, h->interface_num);
+		if (h->max_packet_size == (uint16_t)-1) {
+			h->max_packet_size = NULINK2_HID_MAX_SIZE;
 		}
-		else {
-			if (jtag_libusb_open(param->vids, param->pids, serial, &h->fd) != ERROR_OK) {
-				if (jtag_libusb_open(vids, pids, serial, &h->fd) != ERROR_OK) {
-					LOG_ERROR("open failed");
-					goto error_open;
-				}
-			}
-
-			m_nulink_usb_api.nulink_usb_xfer = nulink_usb_xfer;
-			m_nulink_usb_api.nulink_usb_init_buffer = nulink_usb_init_buffer;
-			h->interface_num = NULINK_INTERFACE_NUM;
-			h->rx_ep = NULINK_RX_EP;
-			h->tx_ep = NULINK_TX_EP;
-			h->max_packet_size = jtag_libusb_get_maxPacketSize(h->fd, 0, h->interface_num);
-			if (h->max_packet_size == (uint16_t)-1) {
-				h->max_packet_size = NULINK_HID_MAX_SIZE;
-			}
-			LOG_DEBUG("max_packet_size: %d", h->max_packet_size);
-			LOG_INFO("NULINK is Nu-Link1");
-		}
-
-		LOG_DEBUG("jtag_libusb_open succeeded");
-
-		jtag_libusb_set_configuration(h->fd, 0);
-
-		err = jtag_libusb_detach_kernel_driver(h->fd, h->interface_num);
-		if (err != ERROR_OK) {
-			LOG_DEBUG("detach kernel driver failed(%d)", err);
-			//goto error_open;
-		}
-		else {
-			LOG_DEBUG("jtag_libusb_detach_kernel_driver succeeded");
-		}
-
-		err = jtag_libusb_claim_interface(h->fd, h->interface_num);
-		if (err != ERROR_OK) {
-			LOG_ERROR("claim interface failed(%d)", err);
-			goto error_open;
-		}
-		else {
-			LOG_DEBUG("jtag_libusb_claim_interface succeeded");
-		}
-
-		h->usbcmdidx = 0;
-		h->hardwareConfig = 0;
-
-		/* get the device version */
-		err = nulink_usb_version(h);
-
-		if (err == ERROR_OK) {
-			break;
-		}
-		else {
-			err = jtag_libusb_release_interface(h->fd, 0);
-			if (err != ERROR_OK) {
-				LOG_ERROR("release interface failed");
+		LOG_DEBUG("max_packet_size: %d", h->max_packet_size);
+		LOG_INFO("NULINK is Nu-Link2");
+	}
+	else {
+		if (jtag_libusb_open(param->vids, param->pids, serial, &h->fd) != ERROR_OK) {
+			if (jtag_libusb_open(vids, pids, serial, &h->fd) != ERROR_OK) {
+				LOG_ERROR("open failed");
 				goto error_open;
 			}
-
-			err = jtag_libusb_reset_device(h->fd);
-			if (err != ERROR_OK) {
-				LOG_ERROR("reset device failed");
-				goto error_open;
-			}
-
-			jtag_libusb_close(h->fd);
-			/*
-			  Give the device one second to settle down and
-			  reenumerate.
-			 */
-			usleep(1 * 1000 * 1000);
-			retry_count--;
 		}
-	} while (1);
+
+		m_nulink_usb_api.nulink_usb_xfer = nulink_usb_xfer;
+		m_nulink_usb_api.nulink_usb_init_buffer = nulink_usb_init_buffer;
+		h->interface_num = NULINK_INTERFACE_NUM;
+		h->rx_ep = NULINK_RX_EP;
+		h->tx_ep = NULINK_TX_EP;
+		h->max_packet_size = jtag_libusb_get_maxPacketSize(h->fd, 0, h->interface_num);
+		if (h->max_packet_size == (uint16_t)-1) {
+			h->max_packet_size = NULINK_HID_MAX_SIZE;
+		}
+		LOG_DEBUG("max_packet_size: %d", h->max_packet_size);
+		LOG_INFO("NULINK is Nu-Link1");
+	}
+
+	LOG_DEBUG("jtag_libusb_open succeeded");
+
+	jtag_libusb_set_configuration(h->fd, 0);
+
+	err = jtag_libusb_detach_kernel_driver(h->fd, h->interface_num);
+	if (err != ERROR_OK) {
+		LOG_DEBUG("detach kernel driver failed(%d)", err);
+		//goto error_open;
+	}
+	else {
+		LOG_DEBUG("jtag_libusb_detach_kernel_driver succeeded");
+	}
+
+	err = jtag_libusb_claim_interface(h->fd, h->interface_num);
+	if (err != ERROR_OK) {
+		LOG_ERROR("claim interface failed(%d)", err);
+		goto error_open;
+	}
+	else {
+		LOG_DEBUG("jtag_libusb_claim_interface succeeded");
+	}
+
+	h->usbcmdidx = 0;
+	h->hardwareConfig = 0;
+
+	/* get the device version */
+	err = nulink_usb_version(h);
+	if (err != ERROR_OK) {
+		LOG_ERROR("nulink_usb_version failed");
+	}
 
 	/* SWD clock rate : 1MHz */
 	nulink_speed(h, 1000, false);
