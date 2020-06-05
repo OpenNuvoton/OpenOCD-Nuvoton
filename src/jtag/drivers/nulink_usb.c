@@ -293,7 +293,7 @@ static void nulink2_usb_init_buffer(void *handle, uint32_t size)
 	h->cmdidx += 3;
 }
 
-static int nulink_usb_version(void *handle)
+static int nulink_usb_version(void *handle, int cmdsize)
 {
 	int res;
 	struct nulink_usb_handle_s *h = handle;
@@ -308,7 +308,7 @@ static int nulink_usb_version(void *handle)
 	h->cmdbuf[h->cmdidx + 4] = (char)0xA1; /* host_rev_num: 6561 */;
 	h->cmdbuf[h->cmdidx + 5] = (char)0x19;
 
-	res = m_nulink_usb_api.nulink_usb_xfer(handle, h->databuf, 4 * 6);
+	res = m_nulink_usb_api.nulink_usb_xfer(handle, h->databuf, cmdsize);
 
 	if (res != ERROR_OK)
 		return res;
@@ -1598,9 +1598,13 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 	h->hardwareConfig = 0;
 
 	/* get the device version */
-	err = nulink_usb_version(h);
+	err = nulink_usb_version(h, 4 * 5);
 	if (err != ERROR_OK) {
-		LOG_ERROR("nulink_usb_version failed");
+		LOG_DEBUG("nulink_usb_version failed with cmdSize(4 * 5)");
+		err = nulink_usb_version(h, 4 * 6);
+		if (err != ERROR_OK) {
+			LOG_DEBUG("nulink_usb_version failed with cmdSize(4 * 6)");
+		}
 	}
 
 	/* SWD clock rate : 1MHz */
