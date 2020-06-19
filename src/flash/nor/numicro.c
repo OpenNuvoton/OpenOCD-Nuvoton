@@ -3033,8 +3033,8 @@ static int numicro_probe(struct flash_bank *bank)
 
 	/* decide the page size */
 	if (armv7m->arm.is_armv6m) { /* M0 */
-		if (((cpu->partid & 0x00FFF000) == 0x00C56000/* M0564  */) ||
-			((cpu->partid & 0x00FFF000) == 0x00C05000/* NUC126 */) ||
+		if (((cpu->partid & 0xFFFFF000) == 0x00C56000/* M0564  */) ||
+			((cpu->partid & 0xFFFFF000) == 0x00C05000/* NUC126 */) ||
 			((cpu->partid & 0xFFFF0F00) == 0x01130600/* M031G  */) ||
 			((cpu->partid & 0xFFFF0F00) == 0x01130100/* M031I  */)) {
 			m_pageSize = NUMICRO_PAGESIZE * 4;
@@ -3053,9 +3053,9 @@ static int numicro_probe(struct flash_bank *bank)
 		}
 	}
 	else { /* armv7m (M4) */
-		if (((cpu->partid & 0x0FFFFF00) == 0x01347900/* M479   */) ||
-			((cpu->partid & 0x00FFF000) == 0x00D48000/* M480   */) ||
-			((cpu->partid & 0x0FFFF000) == 0x01348000/* M480LD */)) {
+		if (((cpu->partid & 0xFFFFFF00) == 0x01347900/* M479   */) ||
+			((cpu->partid & 0xFFFFF000) == 0x00D48000/* M480   */) ||
+			((cpu->partid & 0xFFFFF000) == 0x01348000/* M480LD */)) {
 			m_pageSize = NUMICRO_PAGESIZE * 8;
 		}
 		else if (cpu->partid == 0x00550505) {
@@ -3068,12 +3068,18 @@ static int numicro_probe(struct flash_bank *bank)
 	LOG_DEBUG("Nuvoton pageSize: 0x%" PRIx32 "", m_pageSize);
 
 	/* decide the flash information */
-	if (((cpu->partid & 0x00FFF000) == 0x00D48000/* M480   */) ||
-		((cpu->partid & 0x000FFF00) == 0x00056400/* M0564  */) ||
-		((cpu->partid & 0x000FFF00) == 0x00012100/* NUC121 */) ||
-		((cpu->partid & 0x000FFF00) == 0x00012500/* NUC125 */) ||
-		((cpu->partid & 0x00FFFF00) == 0x00C05200/* NUC126 */) ||
-		((cpu->partid & 0x00FFFF00) == 0x00A05800/* Mini58 */)) {
+	if (((cpu->partid & 0xFFFFF000) == 0x00D48000/* M480   */) ||
+		((cpu->partid & 0xFFFF0000) == 0x01130000/* M03X   */) ||
+		((cpu->partid & 0xFFFFFF00) == 0x00C56400/* M0564  */) ||
+		((cpu->partid & 0xFFFFFF00) == 0x01256400/* M05641 */) ||
+		((cpu->partid & 0xFFFFFF00) == 0x00012100/* NUC121 */) ||
+		((cpu->partid & 0xFFFFFF00) == 0x00012500/* NUC125 */) ||
+		((cpu->partid & 0xFFFFFF00) == 0x00C05200/* NUC126 */) ||
+		((cpu->partid & 0xFFFFFF00) == 0x01205200/* NUC1261*/) ||
+		((cpu->partid & 0xFFFFFF00) == 0x00110200/* NANO102*/) ||
+		((cpu->partid & 0xFFFFFF00) == 0x00110300/* NANO103*/) ||
+		((cpu->partid & 0xFFFFFF00) == 0x00111200/* NANO112*/) ||
+		((cpu->partid & 0xFFFFFF00) == 0x00A05800/* Mini58 */)) {
 		m_flashInfo = NUMICRO_SPROM_MASK;
 	}
 	else {
@@ -3081,15 +3087,15 @@ static int numicro_probe(struct flash_bank *bank)
 	}
 
 	/* decide the target name */
-	if (((cpu->partid & 0x0FFFFF00) == 0x01347900/* M479   */) ||
-		((cpu->partid & 0x00FFF000) == 0x00D48000/* M480   */) ||
-		((cpu->partid & 0x0FFFF000) == 0x01348000/* M480LD */)) {
+	if (((cpu->partid & 0xFFFFFF00) == 0x01347900/* M479   */) ||
+		((cpu->partid & 0xFFFFF000) == 0x00D48000/* M480   */) ||
+		((cpu->partid & 0xFFFFF000) == 0x01348000/* M480LD */)) {
 		m_target_name = "M480";
 	}
 	else if (cpu->partid == 0x00550505) {
 		m_target_name = "NUC505";
 	}
-	else if ((cpu->partid & 0x00FFFF00) == 0x00235500) {
+	else if ((cpu->partid & 0xFFFFFF00) == 0x00235500) {
 		m_target_name = "M2354";
 	}
 	else {
@@ -3284,7 +3290,6 @@ COMMAND_HANDLER(numicro_handle_M2351_erase_command)
 
 	if ((m_flashInfo & NUMICRO_SPROM_MASK) != 0) {
 		LOG_DEBUG("SPROM is erasing");
-
 		retval = numicro_fmc_cmd(target, ISPCMD_ERASE, NUMICRO_SPROM_BASE, NUMICRO_SPROM_ISPDAT, &rdat);
 		if (retval != ERROR_OK)
 			return retval;
