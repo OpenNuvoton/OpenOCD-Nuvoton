@@ -39,38 +39,40 @@
 #include <target/cortex_m.h>
 
 /* Nuvoton NuMicro register locations */
-#define NUMICRO_SYS_BASE        0x50000000
-#define NUMICRO_SYS_WRPROT      0x50000100
-#define NUMICRO_SYS_IPRSTC1     0x50000008
+#define NUMICRO_SYS_BASE        0x50000000UL
+#define NUMICRO_SYS_WRPROT      0x50000100UL
+#define NUMICRO_SYS_IPRSTC1     0x50000008UL
 
-#define NUMICRO_SYSCLK_BASE     0x50000200
-#define NUMICRO_SYSCLK_PWRCON   0x50000200
-#define NUMICRO_SYSCLK_CLKSEL0  0x50000210
-#define NUMICRO_SYSCLK_CLKDIV   0x50000218
-#define NUMICRO_SYSCLK_AHBCLK   0x50000204
+#define NUMICRO_SYSCLK_BASE     0x50000200UL
+#define NUMICRO_SYSCLK_PWRCON   0x50000200UL
+#define NUMICRO_SYSCLK_CLKSEL0  0x50000210UL
+#define NUMICRO_SYSCLK_CLKDIV   0x50000218UL
+#define NUMICRO_SYSCLK_AHBCLK   0x50000204UL
 
-#define NUMICRO_FLASH_BASE      0x5000C000
-#define NUMICRO_FLASH_ISPCON    0x5000C000
-#define NUMICRO_FLASH_ISPADR    0x5000C004
-#define NUMICRO_FLASH_ISPDAT    0x5000C008
-#define NUMICRO_FLASH_ISPCMD    0x5000C00C
-#define NUMICRO_FLASH_ISPTRG    0x5000C010
-#define NUMICRO_FLASH_CHEAT     0x5000C01C /* Undocumented isp register(may be cheat register) */
+#define NUMICRO_FLASH_BASE      0x5000C000UL
+#define NUMICRO_FLASH_ISPCON    0x5000C000UL
+#define NUMICRO_FLASH_ISPADR    0x5000C004UL
+#define NUMICRO_FLASH_ISPDAT    0x5000C008UL
+#define NUMICRO_FLASH_ISPCMD    0x5000C00CUL
+#define NUMICRO_FLASH_ISPTRG    0x5000C010UL
+#define NUMICRO_FLASH_CHEAT     0x5000C01CUL /* Undocumented isp register(may be cheat register) */
 
-#define NUMICRO_SCS_BASE        0xE000E000
-#define NUMICRO_SCS_AIRCR       0xE000ED0C
-#define NUMICRO_SCS_DHCSR       0xE000EDF0
-#define NUMICRO_SCS_DEMCR       0xE000EDFC
-#define NUMICRO_CPUID           0xE000ED00
+#define NUMICRO_SCS_BASE        0xE000E000UL
+#define NUMICRO_SCS_AIRCR       0xE000ED0CUL
+#define NUMICRO_SCS_DHCSR       0xE000EDF0UL
+#define NUMICRO_SCS_DEMCR       0xE000EDFCUL
+#define NUMICRO_CPUID           0xE000ED00UL
 
-#define NUMICRO_APROM_BASE      0x00000000
-#define NUMICRO_DATA_BASE       0x0001F000
-#define NUMICRO_LDROM_BASE      0x00100000
-#define NUMICRO_SPROM_BASE      0x00200000
-#define NUMICRO_CONFIG_BASE     0x00300000
+#define NUMICRO_APROM_BASE      0x00000000UL
+#define NUMICRO_DATA_BASE       0x0001F000UL
+#define NUMICRO_LDROM_BASE      0x00100000UL
+#define NUMICRO_SPROM_BASE      0x00200000UL
+#define NUMICRO_SPROM_BASE2     0x00240000UL
+#define NUMICRO_SPROM_BASE3     0x00280000UL
+#define NUMICRO_CONFIG_BASE     0x00300000UL
 
-#define NUMICRO_CONFIG0         0x5000C000
-#define NUMICRO_CONFIG1         0x5000C004
+#define NUMICRO_CONFIG0         0x5000C000UL
+#define NUMICRO_CONFIG1         0x5000C004UL
 
 /* Command register bits */
 #define PWRCON_OSC22M         (1 << 2)
@@ -97,31 +99,32 @@
 #define DHCSR_S_SDE           (1 << 20)
 
 /* isp commands */
-#define ISPCMD_READ           0x00
-#define ISPCMD_WRITE          0x21
-#define ISPCMD_ERASE          0x22
-#define ISPCMD_CHIPERASE      0x26   /* Undocumented isp "Chip-Erase" command */
-#define ISPCMD_READ_CID       0x0B
-#define ISPCMD_READ_UID       0x04
-#define ISPCMD_VECMAP         0x2E
+#define ISPCMD_READ           0x00U
+#define ISPCMD_WRITE          0x21U
+#define ISPCMD_ERASE          0x22U
+#define ISPCMD_CHIPERASE      0x26U   /* Undocumented isp "Chip-Erase" command */
+#define ISPCMD_READ_CID       0x0BU
+#define ISPCMD_READ_UID       0x04U
+#define ISPCMD_VECMAP         0x2EU
 #define ISPTRG_ISPGO          (1 << 0)
 
 /* access unlock keys */
-#define REG_KEY1              0x59
-#define REG_KEY2              0x16
-#define REG_KEY3              0x88
-#define REG_LOCK              0x00
+#define REG_KEY1              0x59U
+#define REG_KEY2              0x16U
+#define REG_KEY3              0x88U
+#define REG_LOCK              0x00U
 
 /* flash pagesizes */
 #define NUMICRO_PAGESIZE        512
 /* flash MAX banks */
 #define NUMICRO_MAX_FLASH_BANKS 4
 /* flash mask */
-#define NUMICRO_TZ_MASK       0xEFFFFFFF
-#define NUMICRO_SPROM_MASK    0x00000001
-#define NUMICRO_SPROM_ISPDAT  0x55AA03
+#define NUMICRO_TZ_MASK           0xEFFFFFFFUL
+#define NUMICRO_SPROM_MASK        0x00000001UL
+#define NUMICRO_SPROM_MINI57_MASK 0x00000002UL
+#define NUMICRO_SPROM_ISPDAT      0x55AA03UL
 /* SPIM flash start address */
-#define NUMICRO_SPIM_FLASH_START_ADDRESS  0x8000000
+#define NUMICRO_SPIM_FLASH_START_ADDRESS  0x8000000UL
 
 /* flash bank structs */
 struct numicro_flash_bank_type {
@@ -2662,6 +2665,39 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 				if (retval != ERROR_OK)
 					return retval;
 			}
+			else if ((m_flashInfo & NUMICRO_SPROM_MINI57_MASK) != 0 &&
+				(address >= NUMICRO_SPROM_BASE) && (address < (NUMICRO_SPROM_BASE + m_pageSize))) {
+				LOG_DEBUG("SPROM is erasing");
+				retval = target_write_u32(target, NUMICRO_FLASH_ISPDAT - m_addressMinusOffset, NUMICRO_SPROM_ISPDAT);
+				if (retval != ERROR_OK)
+					return retval;
+
+				retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, NUMICRO_SPROM_BASE);
+				if (retval != ERROR_OK)
+					return retval;
+			}
+			else if ((m_flashInfo & NUMICRO_SPROM_MINI57_MASK) != 0 &&
+				(address >= NUMICRO_SPROM_BASE2) && (address < (NUMICRO_SPROM_BASE2 + m_pageSize))) {
+				LOG_DEBUG("SPROM is erasing");
+				retval = target_write_u32(target, NUMICRO_FLASH_ISPDAT - m_addressMinusOffset, NUMICRO_SPROM_ISPDAT);
+				if (retval != ERROR_OK)
+					return retval;
+
+				retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, NUMICRO_SPROM_BASE2);
+				if (retval != ERROR_OK)
+					return retval;
+			}
+			else if ((m_flashInfo & NUMICRO_SPROM_MINI57_MASK) != 0 &&
+				(address >= NUMICRO_SPROM_BASE3) && (address < (NUMICRO_SPROM_BASE3 + m_pageSize))) {
+				LOG_DEBUG("SPROM is erasing");
+				retval = target_write_u32(target, NUMICRO_FLASH_ISPDAT - m_addressMinusOffset, NUMICRO_SPROM_ISPDAT);
+				if (retval != ERROR_OK)
+					return retval;
+
+				retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, NUMICRO_SPROM_BASE3);
+				if (retval != ERROR_OK)
+					return retval;
+			}
 			else {
 				retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, address & NUMICRO_TZ_MASK);
 				if (retval != ERROR_OK)
@@ -3068,19 +3104,24 @@ static int numicro_probe(struct flash_bank *bank)
 	LOG_DEBUG("Nuvoton pageSize: 0x%" PRIx32 "", m_pageSize);
 
 	/* decide the flash information */
-	if (((cpu->partid & 0xFFFFF000) == 0x00D48000/* M480   */) ||
+	if ((cpu->partid == 0x00295C50/* NUC029LGE */) ||
+		(cpu->partid == 0x00295C51/* NUC029SGE */) ||
+		(cpu->partid == 0x00295C52/* NUC029KGE */) ||
 		((cpu->partid & 0xFFFF0000) == 0x01130000/* M03X   */) ||
 		((cpu->partid & 0xFFFFFF00) == 0x00C56400/* M0564  */) ||
 		((cpu->partid & 0xFFFFFF00) == 0x01256400/* M05641 */) ||
-		((cpu->partid & 0xFFFFFF00) == 0x00012100/* NUC121 */) ||
-		((cpu->partid & 0xFFFFFF00) == 0x00012500/* NUC125 */) ||
-		((cpu->partid & 0xFFFFFF00) == 0x00C05200/* NUC126 */) ||
-		((cpu->partid & 0xFFFFFF00) == 0x01205200/* NUC1261*/) ||
-		((cpu->partid & 0xFFFFFF00) == 0x00110200/* NANO102*/) ||
-		((cpu->partid & 0xFFFFFF00) == 0x00110300/* NANO103*/) ||
-		((cpu->partid & 0xFFFFFF00) == 0x00111200/* NANO112*/) ||
-		((cpu->partid & 0xFFFFFF00) == 0x00A05800/* Mini58 */)) {
+		((cpu->partid & 0xFFFFF000) == 0x00D48000/* M480   */) ||
+		((cpu->partid & 0xFFFFFF00) == 0x00012100/* NUC121  */) ||
+		((cpu->partid & 0xFFFFFF00) == 0x00012500/* NUC125  */) ||
+		((cpu->partid & 0xFFFFFF00) == 0x00C05200/* NUC126  */) ||
+		((cpu->partid & 0xFFFFFF00) == 0x01205200/* NUC1261 */) ||
+		((cpu->partid & 0xFFFFFF00) == 0x00110200/* NANO102 */) ||
+		((cpu->partid & 0xFFFFFF00) == 0x00111200/* NANO112 */) ||
+		((cpu->partid & 0xFFFFFF00) == 0x00A05800/* Mini58  */)) {
 		m_flashInfo = NUMICRO_SPROM_MASK;
+	}
+	else if ((cpu->partid & 0xFFFFFF00) == 0x00B05700/* Mini57 */) {
+		m_flashInfo = NUMICRO_SPROM_MINI57_MASK;
 	}
 	else {
 		m_flashInfo = 0;
@@ -3260,6 +3301,21 @@ COMMAND_HANDLER(numicro_handle_chip_erase_command)
 		if (retval != ERROR_OK)
 			return retval;
 	}
+	else if ((m_flashInfo & NUMICRO_SPROM_MINI57_MASK) != 0) {
+		LOG_DEBUG("SPROM is erasing");
+		retval = numicro_fmc_cmd(target, ISPCMD_ERASE, NUMICRO_SPROM_BASE, NUMICRO_SPROM_ISPDAT, &rdat);
+		if (retval != ERROR_OK)
+			return retval;
+		retval = numicro_fmc_cmd(target, ISPCMD_ERASE, NUMICRO_SPROM_BASE2, NUMICRO_SPROM_ISPDAT, &rdat);
+		if (retval != ERROR_OK)
+			return retval;
+		retval = numicro_fmc_cmd(target, ISPCMD_ERASE, NUMICRO_SPROM_BASE3, NUMICRO_SPROM_ISPDAT, &rdat);
+		if (retval != ERROR_OK)
+			return retval;
+	}
+	else {
+		LOG_DEBUG("SPROM do not exist");
+	}
 
 	command_print(CMD_CTX, "numicro chip_erase complete");
 
@@ -3286,13 +3342,6 @@ COMMAND_HANDLER(numicro_handle_M2351_erase_command)
 	if (retval != ERROR_OK) {
 		command_print(CMD_CTX, "numicro M2351_erase failed");
 		return retval;
-	}
-
-	if ((m_flashInfo & NUMICRO_SPROM_MASK) != 0) {
-		LOG_DEBUG("SPROM is erasing");
-		retval = numicro_fmc_cmd(target, ISPCMD_ERASE, NUMICRO_SPROM_BASE, NUMICRO_SPROM_ISPDAT, &rdat);
-		if (retval != ERROR_OK)
-			return retval;
 	}
 
 	command_print(CMD_CTX, "numicro M2351_erase complete");
