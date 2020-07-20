@@ -266,7 +266,7 @@ static int hl_target_request_data(struct target *target,
 	uint32_t size, uint8_t *buffer)
 {
 	struct hl_interface_s *hl_if = target_to_adapter(target);
-	uint8_t data;
+	uint8_t data = 0;
 	uint8_t ctrl;
 	uint32_t i;
 

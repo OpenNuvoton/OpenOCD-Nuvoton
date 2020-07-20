@@ -915,7 +915,7 @@ static int svf_execute_tap(void)
 
 static int svf_run_command(struct command_context *cmd_ctx, char *cmd_str)
 {
-	char *argus[256], command;
+	char *argus[256] = {0}, command;
 	int num_of_argu = 0, i;
 
 	/* tmp variable */

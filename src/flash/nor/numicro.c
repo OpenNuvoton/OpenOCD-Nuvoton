@@ -3326,7 +3326,6 @@ int nulink_usb_M2351_erase(void);
 COMMAND_HANDLER(numicro_handle_M2351_erase_command)
 {
 	int retval = ERROR_OK;
-	uint32_t rdat;
 
 	if (CMD_ARGC != 0)
 		return ERROR_COMMAND_SYNTAX_ERROR;
