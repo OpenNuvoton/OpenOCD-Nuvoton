@@ -3109,14 +3109,19 @@ static int numicro_probe(struct flash_bank *bank)
 
 	/* decide the page size */
 	if (armv7m->arm.is_armv6m) { /* M0 */
-		if ((cpu->partid == 0x01607171/* M071QE4AE */) ||
+		if ((cpu->partid == 0x00295C50/* NUC029LGE */) ||
+			(cpu->partid == 0x00295C51/* NUC029SGE */) ||
+			(cpu->partid == 0x00295C52/* NUC029KGE */) ||
+			(cpu->partid == 0x01607171/* M071QE4AE */) ||
 			(cpu->partid == 0x01607170/* M071QG4AE */) ||
 			(cpu->partid == 0x01607130/* M071VG4AE */) ||
 			((cpu->partid & 0xFFFFF000) == 0x00C56000/* M0564  */) ||
 			((cpu->partid & 0xFFFFF000) == 0x00C05000/* NUC126 */) ||
+			((cpu->partid & 0xFFFFFF00) == 0x01205200/* NUC1261*/) ||
 			((cpu->partid & 0xFFFFFF00) == 0x01131600/* M031G  */) ||
 			((cpu->partid & 0xFFFFFF00) == 0x01132600/* M031G  */) ||
-			((cpu->partid & 0xFFFF0F00) == 0x01130100/* M031I  */)) {
+			((cpu->partid & 0xFFFFFF00) == 0x01131100/* M031I  */) ||
+			((cpu->partid & 0xFFFFFF00) == 0x01132100/* M031I  */)) {
 			m_pageSize = NUMICRO_PAGESIZE * 4;
 		}
 		else {
@@ -3126,7 +3131,7 @@ static int numicro_probe(struct flash_bank *bank)
 	else if (armv7m->arm.is_armv8m) { /* M23 */
 
 		if (armv7m->arm.is_armv8mSecureExtend) {
-			m_pageSize = NUMICRO_PAGESIZE * 4; /* for M2351 and M2354 */
+			m_pageSize = NUMICRO_PAGESIZE * 4; /* for M261, M2351 and M2354 */
 		}
 		else {
 			m_pageSize = NUMICRO_PAGESIZE;     /* for M251 */
