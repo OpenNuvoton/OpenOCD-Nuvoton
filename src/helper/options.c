@@ -29,6 +29,8 @@
 
 #include <getopt.h>
 
+#define HAVE_REALPATH
+
 static int help_flag, version_flag;
 
 static const struct option long_options[] = {
@@ -50,7 +52,81 @@ int configuration_output_handler(struct command_context *context, const char *li
 	return ERROR_OK;
 }
 
-#ifdef _WIN32
+/* Return the canonical path to the directory the openocd executable is in.
+ * The path should be absolute, use / as path separator and have all symlinks
+ * resolved. The returned string is malloc'd. */
+static char *find_exe_path(void)
+{
+	char *exepath = NULL;
+
+	do {
+#if IS_WIN32 && !IS_CYGWIN
+		exepath = malloc(MAX_PATH);
+		if (exepath == NULL)
+			break;
+		GetModuleFileName(NULL, exepath, MAX_PATH);
+
+		/* Convert path separators to UNIX style, should work on Windows also. */
+		for (char *p = exepath; *p; p++) {
+			if (*p == '\\')
+				*p = '/';
+		}
+
+#elif IS_DARWIN
+		exepath = malloc(PROC_PIDPATHINFO_MAXSIZE);
+		if (exepath == NULL)
+			break;
+		if (proc_pidpath(getpid(), exepath, PROC_PIDPATHINFO_MAXSIZE) <= 0) {
+			free(exepath);
+			exepath = NULL;
+		}
+
+#elif defined(CTL_KERN) && defined(KERN_PROC) && defined(KERN_PROC_PATHNAME) /* *BSD */
+#ifndef PATH_MAX
+#define PATH_MAX 1024
+#endif
+		char *path = malloc(PATH_MAX);
+		if (path == NULL)
+			break;
+		int mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
+		size_t size = PATH_MAX;
+
+		if (sysctl(mib, (u_int)ARRAY_SIZE(mib), path, &size, NULL, 0) != 0)
+			break;
+
+#ifdef HAVE_REALPATH
+		exepath = realpath(path, NULL);
+		free(path);
+#else
+		exepath = path;
+#endif
+
+#elif defined(HAVE_REALPATH) /* Assume POSIX.1-2008 */
+		/* Try Unices in order of likelihood. */
+		exepath = realpath("/proc/self/exe", NULL); /* Linux/Cygwin */
+		if (exepath == NULL)
+			exepath = realpath("/proc/self/path/a.out", NULL); /* Solaris */
+		if (exepath == NULL)
+			exepath = realpath("/proc/curproc/file", NULL); /* FreeBSD (Should be covered above) */
+#endif
+	} while (0);
+
+	if (exepath != NULL) {
+		/* Strip executable file name, leaving path */
+		*strrchr(exepath, '/') = '\0';
+	} else {
+		LOG_WARNING("Could not determine executable path, using configured BINDIR.");
+		LOG_DEBUG("BINDIR = %s", BINDIR);
+#ifdef HAVE_REALPATH
+		exepath = realpath(BINDIR, NULL);
+#else
+		exepath = strdup(BINDIR);
+#endif
+	}
+
+	return exepath;
+}
+
 static char *find_suffix(const char *text, const char *suffix)
 {
 	size_t text_len = strlen(text);
@@ -64,41 +140,27 @@ static char *find_suffix(const char *text, const char *suffix)
 
 	return (char *)text + text_len - suffix_len;
 }
-#endif
 
 static void add_default_dirs(void)
 {
 	const char *run_prefix;
 	char *path;
-
-#ifdef _WIN32
-	char strExePath[MAX_PATH];
-	GetModuleFileName(NULL, strExePath, MAX_PATH);
+	char *exepath = find_exe_path();
 
 	/* Strip executable file name, leaving path */
-	*strrchr(strExePath, '\\') = '\0';
-
-	/* Convert path separators to UNIX style, should work on Windows also. */
-	for (char *p = strExePath; *p; p++) {
-		if (*p == '\\')
-			*p = '/';
-	}
+	*strrchr(exepath, '/') = '\0';
 
 #if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
-	char *end_of_prefix = find_suffix(strExePath, "bin");
+	char *end_of_prefix = find_suffix(exepath, "bin");
 	if (end_of_prefix != NULL)
 		*end_of_prefix = '\0';
 #else
-	char *end_of_prefix = find_suffix(strExePath, BINDIR);
+	char *end_of_prefix = find_suffix(exepath, BINDIR);
 	if (end_of_prefix != NULL)
 		*end_of_prefix = '\0';
 #endif
 
-	run_prefix = strExePath;
-#else
-	run_prefix = "";
-#endif
-
+	run_prefix = exepath;
 	LOG_DEBUG("bindir=%s", BINDIR);
 	LOG_DEBUG("pkgdatadir=%s", PKGDATADIR);
 	LOG_DEBUG("run_prefix=%s", run_prefix);
@@ -160,6 +222,7 @@ static void add_default_dirs(void)
 		free(path);
 	}
 #endif
+	free(exepath);
 }
 
 int parse_cmdline_args(struct command_context *cmd_ctx, int argc, char *argv[])
