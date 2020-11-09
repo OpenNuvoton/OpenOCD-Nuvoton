@@ -29,7 +29,9 @@
 
 #include <getopt.h>
 
+#ifndef _WIN32
 #define HAVE_REALPATH
+#endif
 
 static int help_flag, version_flag;
 
