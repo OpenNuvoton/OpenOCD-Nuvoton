@@ -1527,8 +1527,8 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 
 	const uint16_t vids[] = { param->vid, 0 };
 	const uint16_t pids[] = { param->pid, 0 };
-	const uint16_t vid_nulink2[] = { 0x0416, 0x0416, 0 };
-	const uint16_t pid_nulink2[] = { 0x5200, 0x5201, 0 };
+	const uint16_t vid_nulink2[] = { 0x0416, 0x0416, 0x0416, 0x0416, 0 };
+	const uint16_t pid_nulink2[] = { 0x5200, 0x5201, 0x5202, 0x5203, 0 };
 	const char *serial = param->serial;
 
 	if (param->vid != 0 && param->pid != 0) {
@@ -1549,7 +1549,6 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 		if (h->max_packet_size == (uint16_t)-1) {
 			h->max_packet_size = NULINK2_HID_MAX_SIZE;
 		}
-		LOG_DEBUG("max_packet_size: %d", h->max_packet_size);
 		LOG_INFO("NULINK is Nu-Link2");
 	}
 	else {
@@ -1569,10 +1568,12 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 		if (h->max_packet_size == (uint16_t)-1) {
 			h->max_packet_size = NULINK_HID_MAX_SIZE;
 		}
-		LOG_DEBUG("max_packet_size: %d", h->max_packet_size);
 		LOG_INFO("NULINK is Nu-Link1");
 	}
-
+	LOG_DEBUG("interface number: %d", h->interface_num);
+	LOG_DEBUG("rx endpoint: 0x%02x", h->rx_ep);
+	LOG_DEBUG("tx endpoint: 0x%02x", h->tx_ep);
+	LOG_DEBUG("max_packet_size: %d", h->max_packet_size);
 	LOG_DEBUG("jtag_libusb_open succeeded");
 
 	jtag_libusb_set_configuration(h->fd, 0);

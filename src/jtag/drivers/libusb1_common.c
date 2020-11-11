@@ -32,6 +32,9 @@ static bool jtag_libusb_match(struct libusb_device_descriptor *dev_desc,
 	for (unsigned i = 0; vids[i]; i++) {
 		if (dev_desc->idVendor == vids[i] &&
 			dev_desc->idProduct == pids[i]) {
+			LOG_DEBUG("jtag_libusb_match: vid(0x%04x), pid(0x%04x)",
+				vids[i],
+				pids[i]);
 			return true;
 		}
 	}
