@@ -139,6 +139,9 @@ struct arm {
 	/** Flag reporting whether most significant bit of FMC of Nuvoton M0 be 4. */
 	bool is_NUC_M0_FMC_MSB4;
 
+	/** Flag reporting whether most significant bit of FMC of Nuvoton M23 be 5. */
+	bool is_NUC_M23_FMC_MSB5;
+
 	/** Flag reporting whether semihosting is active. */
 	bool is_semihosting;
 

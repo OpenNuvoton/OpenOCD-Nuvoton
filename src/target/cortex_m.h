@@ -148,6 +148,8 @@
 /* NUVOTON FMC */
 #define NUC_M0_FLASH_VERSION   0x40003FFC
 #define NUC_M0_FLASH_MSB4      0x20171011 /* most significant bit is 4*/
+#define NUC_M23_FLASH_VERSION  0x50003FFC
+#define NUC_M23_FLASH_MSB5     0x20201130 /* most significant bit is 5 */
 
 struct cortex_m_fp_comparator {
 	int used;
