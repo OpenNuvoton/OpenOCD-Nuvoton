@@ -3155,7 +3155,9 @@ static int numicro_probe(struct flash_bank *bank)
 			((cpu->partid & 0xFFFFF000) == 0x00C56000/* M0564  */) ||
 			((cpu->partid & 0xFFFFF000) == 0x00C05000/* NUC126 */) ||
 			((cpu->partid & 0xFFFFFF00) == 0x01205200/* NUC1261*/) ||
-			((cpu->partid & 0xFFFFFF00) == 0x01131600/* M031G  */) ||
+			((cpu->partid & 0xFFFFFFF0) == 0x01131600/* M031G  */) ||
+			((cpu->partid & 0xFFFFFFF0) == 0x01131610/* M031G  */) ||
+			((cpu->partid & 0xFFFFFFF0) == 0x01131640/* M031G  */) ||
 			((cpu->partid & 0xFFFFFF00) == 0x01132600/* M031G  */) ||
 			((cpu->partid & 0xFFFFFF00) == 0x01131100/* M031I  */) ||
 			((cpu->partid & 0xFFFFFF00) == 0x01132100/* M031I  */)) {
