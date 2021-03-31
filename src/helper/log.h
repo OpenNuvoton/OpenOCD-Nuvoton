@@ -54,7 +54,8 @@ enum log_levels {
 	LOG_LVL_ERROR = 0,
 	LOG_LVL_WARNING = 1,
 	LOG_LVL_INFO = 2,
-	LOG_LVL_DEBUG = 3
+	LOG_LVL_DEBUG = 3,
+	LOG_LVL_NULINK = 4
 };
 
 void log_printf(enum log_levels level, const char *file, unsigned line,

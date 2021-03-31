@@ -234,8 +234,8 @@ COMMAND_HANDLER(handle_debug_level_command)
 	if (CMD_ARGC == 1) {
 		int new_level;
 		COMMAND_PARSE_NUMBER(int, CMD_ARGV[0], new_level);
-		if ((new_level > LOG_LVL_DEBUG) || (new_level < LOG_LVL_SILENT)) {
-			LOG_ERROR("level must be between %d and %d", LOG_LVL_SILENT, LOG_LVL_DEBUG);
+		if ((new_level > LOG_LVL_NULINK) || (new_level < LOG_LVL_SILENT)) {
+			LOG_ERROR("level must be between %d and %d", LOG_LVL_SILENT, LOG_LVL_NULINK);
 			return ERROR_COMMAND_SYNTAX_ERROR;
 		}
 		debug_level = new_level;
@@ -273,7 +273,7 @@ static struct command_registration log_command_handlers[] = {
 		.mode = COMMAND_ANY,
 		.help = "Sets the verbosity level of debugging output. "
 			"0 shows errors only; 1 adds warnings; "
-			"2 (default) adds other info; 3 adds debugging.",
+			"2 (default) adds other info; 3 adds debugging; 4 adds Nu-Link debugging.",
 		.usage = "number",
 	},
 	COMMAND_REGISTRATION_DONE
@@ -297,7 +297,7 @@ void log_init(void)
 		int retval = parse_int(debug_env, &value);
 		if (ERROR_OK == retval &&
 				debug_level >= LOG_LVL_SILENT &&
-				debug_level <= LOG_LVL_DEBUG)
+				debug_level <= LOG_LVL_NULINK)
 				debug_level = value;
 	}
 
