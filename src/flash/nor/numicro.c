@@ -125,6 +125,9 @@
 #define NUMICRO_SPROM_ISPDAT      0x55AA03UL
 /* SPIM flash start address */
 #define NUMICRO_SPIM_FLASH_START_ADDRESS  0x8000000UL
+/* M23 MFC ISP */
+#define NUMICRO_M23_FMC_ISPSTS        0x4000C040UL
+#define NUMICRO_M23_FMC_ISPSTS_VECMAP 0x00FFFE00UL
 
 /* flash bank structs */
 struct numicro_flash_bank_type {
@@ -2940,7 +2943,7 @@ static int numicro_write(struct flash_bank *bank, const uint8_t *buffer,
 		uint32_t offset, uint32_t count)
 {
 	struct target *target = bank->target;
-	uint32_t timeout, status;
+	uint32_t timeout, status, rdat;
 	uint8_t *new_buffer = NULL;
 	int retval = ERROR_OK;
 
@@ -3044,6 +3047,38 @@ static int numicro_write(struct flash_bank *bank, const uint8_t *buffer,
 
 	/* done. */
 	LOG_DEBUG("Write done.");
+
+	/* check VectorRemap */
+	if (m_M23SecureDebugState == NUMICRO_M23_SECURE_DEBUG_S) {
+		// M2351/M2354
+		retval = target_read_u32(target, NUMICRO_M23_FMC_ISPSTS, &status);
+		if (retval != ERROR_OK)
+			return retval;
+		if (bank->base + offset < NUMICRO_LDROM_BASE) {
+			// APROM
+			if ((status & NUMICRO_M23_FMC_ISPSTS_VECMAP) != NUMICRO_APROM_BASE)
+			{
+				LOG_DEBUG("VectorRemap to APROM");
+				retval = numicro_fmc_cmd(target, ISPCMD_VECMAP, NUMICRO_APROM_BASE, 0, &rdat);
+				if (retval != ERROR_OK) {
+					LOG_DEBUG("VectorRemap to APROM failed");
+					return retval;
+				}
+			}
+		}
+		else {
+			// LDROM
+			if ((status & NUMICRO_M23_FMC_ISPSTS_VECMAP) != NUMICRO_LDROM_BASE)
+			{
+				LOG_DEBUG("VectorRemap to LDROM");
+				retval = numicro_fmc_cmd(target, ISPCMD_VECMAP, NUMICRO_LDROM_BASE, 0, &rdat);
+				if (retval != ERROR_OK) {
+					LOG_DEBUG("VectorRemap to LDROM failed");
+					return retval;
+				}
+			}
+		}
+	}
 
 	return ERROR_OK;
 }
