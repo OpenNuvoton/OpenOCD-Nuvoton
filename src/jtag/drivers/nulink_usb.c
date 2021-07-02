@@ -51,7 +51,7 @@
 #define NULINK_HID_MAX_SIZE    (64)
 #define NULINK2_HID_MAX_SIZE   (1024)
 #define V6M_MAX_COMMAND_LENGTH (NULINK_HID_MAX_SIZE - 2)
-#define V7M_MAX_COMMAND_LENGTH (NULINK_HID_MAX_SIZE - 3)
+#define V7M_MAX_COMMAND_LENGTH (NULINK2_HID_MAX_SIZE - 3)
 
 #define USBCMD_TIMEOUT		5000
 
@@ -243,7 +243,7 @@ static int nulink_usb_xfer(void *handle, uint8_t *buf, int size)
 	assert(handle != NULL);
 
 	err = nulink_usb_xfer_rw(h, size, h->tempbuf);
-	memcpy(buf, h->tempbuf + 2, V6M_MAX_COMMAND_LENGTH);
+	memcpy(buf, h->tempbuf + 2, h->max_packet_size - 2);
 
 	return err;
 }
@@ -256,7 +256,7 @@ static int nulink2_usb_xfer(void *handle, uint8_t *buf, int size)
 	assert(handle != NULL);
 
 	err = nulink2_usb_xfer_rw(h, size, h->tempbuf);
-	memcpy(buf, h->tempbuf + 3, V7M_MAX_COMMAND_LENGTH);
+	memcpy(buf, h->tempbuf + 3, h->max_packet_size - 3);
 
 	return err;
 }
