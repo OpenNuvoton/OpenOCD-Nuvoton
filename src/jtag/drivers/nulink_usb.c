@@ -73,6 +73,7 @@ struct nulink_usb_handle_s {
 	uint16_t hardwareConfig; /* bit 0: 1:Nu-Link-Pro, 0:Normal Nu-Link | bit 1: 1:Nu-Link2, 0:Nu-Link */
 	uint32_t reset_command;
 	uint32_t extMode_command;
+	uint32_t io_voltage;
 } *m_nulink_usb_handle;
 
 struct nulink_usb_internal_api_s {
@@ -1391,7 +1392,7 @@ static int nulink_speed(void *handle, int khz, bool query)
 		h_u32_to_le(h->cmdbuf + h->cmdidx, 0);
 		h->cmdidx += 4;
 		/* IO voltage */
-		h_u32_to_le(h->cmdbuf + h->cmdidx, 3300);
+		h_u32_to_le(h->cmdbuf + h->cmdidx, h->io_voltage);
 		h->cmdidx += 4;
 		/* If supply voltage to target or not */
 		h_u32_to_le(h->cmdbuf + h->cmdidx, 0);
@@ -1609,8 +1610,24 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 		}
 	}
 
+	if ((strcmp(param->device_desc, "Nu-Link-Pro output voltage 1800") == 0) ||
+		(strcmp(param->device_desc, "Nu-Link2-Pro output voltage 1800") == 0)) {
+		h->io_voltage = 1800;
+	}
+	else if ((strcmp(param->device_desc, "Nu-Link-Pro output voltage 2500") == 0) ||
+			 (strcmp(param->device_desc, "Nu-Link2-Pro output voltage 2500") == 0)) {
+		h->io_voltage = 2500;
+	}
+	else if ((strcmp(param->device_desc, "Nu-Link-Pro output voltage 5000") == 0) ||
+			 (strcmp(param->device_desc, "Nu-Link2-Pro output voltage 5000") == 0)) {
+		h->io_voltage = 5000;
+	}
+	else {
+		h->io_voltage = 3300;
+	}
+
 	/* SWD clock rate : 1MHz */
-	nulink_speed(h, 1000, false);
+	nulink_speed(h, param->initial_interface_speed, false);
 
 	LOG_DEBUG("nulink_usb_open: we manually perform nulink_usb_reset");
 	h->reset_command = RESET_HW;
