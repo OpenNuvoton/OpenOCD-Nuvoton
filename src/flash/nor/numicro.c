@@ -2661,7 +2661,7 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 {
 	struct target *target = bank->target;
 	struct working_area *erase_algorithm;
-	uint32_t address;
+	uint32_t address = 0;
 	struct reg_param reg_params[6];
 	struct armv7m_common *armv7m = target_to_armv7m(target);
 	struct armv7m_algorithm armv7m_info;
