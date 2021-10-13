@@ -1115,7 +1115,7 @@ static uint32_t numicro_fmc_cmd(struct target *target, uint32_t cmd, uint32_t ad
 		return retval;
 
 	/* Wait for busy to clear - check the GO flag */
-	timeout = 100;
+	timeout = 0;
 	for (;;) {
 		retval = target_read_u32(target, NUMICRO_FLASH_ISPTRG - m_addressMinusOffset, &status);
 		if (retval != ERROR_OK)
@@ -1123,7 +1123,7 @@ static uint32_t numicro_fmc_cmd(struct target *target, uint32_t cmd, uint32_t ad
 			LOG_DEBUG("status: 0x%" PRIx32 "", status);
 		if ((status & (ISPTRG_ISPGO)) == 0)
 			break;
-		if (timeout-- <= 0) {
+		if (timeout++ > 100) {
 			LOG_DEBUG("timed out waiting for flash");
 			return ERROR_FAIL;
 		}
@@ -1631,8 +1631,8 @@ static int numicro_init_isp(struct target *target)
 	struct reg_param reg_params[6];
 	struct armv7m_common *armv7m = target_to_armv7m(target);
 	struct armv7m_algorithm armv7m_info;
-	uint32_t algorithm_init_entry_offset = 0;
-	uint32_t algorithm_lr = 0;
+	uint32_t algorithm_init_entry_offset;
+	uint32_t algorithm_lr;
 	int retval = ERROR_OK;
 	uint32_t reg_stat;
 
@@ -1678,7 +1678,6 @@ static int numicro_init_isp(struct target *target)
 				init_algorithm->address + algorithm_init_entry_offset, 0, 100000, &armv7m_info);
 			if (retval != ERROR_OK) {
 				LOG_ERROR("Error executing NuMicro Flash erase algorithm");
-				retval = ERROR_FLASH_OPERATION_FAILED;
 			}
 
 			target_free_working_area(target, init_algorithm);
@@ -1735,7 +1734,6 @@ static int numicro_init_isp(struct target *target)
 			init_algorithm->address + algorithm_init_entry_offset, 0, 100000, &armv7m_info);
 		if (retval != ERROR_OK) {
 			LOG_ERROR("Error executing NuMicro init algorithm");
-			retval = ERROR_FLASH_OPERATION_FAILED;
 		}
 
 		target_free_working_area(target, init_algorithm);
@@ -2026,7 +2024,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			buf_set_u32(reg_params[3].value, 0, 32, write_algorithm->address + target->working_area_size);
 			buf_set_u32(reg_params[4].value, 0, 32, algorithm_lr);
 
-			retval = target_start_algorithm(target, 0, NULL, 5, reg_params,
+			target_start_algorithm(target, 0, NULL, 5, reg_params,
 				write_algorithm->address + algorithm_programPage_entry_offset, 0, &armv7m_info);
 
 			buffer  += thisrun_count * 4;
@@ -2042,7 +2040,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 					break;
 			}
 
-			retval = target_wait_algorithm(target, 0, NULL, 5, reg_params,
+			target_wait_algorithm(target, 0, NULL, 5, reg_params,
 				0, 10000, &armv7m_info);
 
 			if (thisrun_count == 0)
@@ -2054,7 +2052,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			buf_set_u32(reg_params[3].value, 0, 32, write_algorithm->address + target->working_area_size);
 			buf_set_u32(reg_params[4].value, 0, 32, algorithm_lr);
 
-			retval = target_start_algorithm(target, 0, NULL, 5, reg_params,
+			target_start_algorithm(target, 0, NULL, 5, reg_params,
 				write_algorithm->address + algorithm_programPage_entry_offset, 0, &armv7m_info);
 
 			buffer  += thisrun_count * 4;
@@ -2070,7 +2068,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 					break;
 			}
 
-			retval = target_wait_algorithm(target, 0, NULL, 5, reg_params,
+			target_wait_algorithm(target, 0, NULL, 5, reg_params,
 				0, 10000, &armv7m_info);
 		}
 
@@ -2107,7 +2105,6 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			write_algorithm->address + algorithm_programPage_entry_offset, 0, 100000, &armv7m_info);
 		if (retval != ERROR_OK) {
 			LOG_ERROR("Error executing NuMicro init algorithm");
-			retval = ERROR_FLASH_OPERATION_FAILED;
 		}
 
 		// ChipErase
@@ -2117,7 +2114,6 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 				write_algorithm->address + algorithm_programPage_entry_offset, 0, 100000, &armv7m_info);
 			if (retval != ERROR_OK) {
 				LOG_ERROR("Error executing NuMicro chip erase algorithm");
-				retval = ERROR_FLASH_OPERATION_FAILED;
 			}
 		}
 		m_bSPIMFlashSectorErased = 0;
@@ -2144,7 +2140,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			buf_set_u32(reg_params[4].value, 0, 32, write_algorithm->address + target->working_area_size);
 			buf_set_u32(reg_params[5].value, 0, 32, algorithm_lr);
 
-			retval = target_start_algorithm(target, 0, NULL, 6, reg_params,
+			target_start_algorithm(target, 0, NULL, 6, reg_params,
 				write_algorithm->address + algorithm_programPage_entry_offset, 0, &armv7m_info);
 
 			buffer  += thisrun_count * 4;
@@ -2160,7 +2156,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 					break;
 			}
 
-			retval = target_wait_algorithm(target, 0, NULL, 6, reg_params,
+			target_wait_algorithm(target, 0, NULL, 6, reg_params,
 				0, 10000, &armv7m_info);
 
 			if (thisrun_count == 0)
@@ -2173,7 +2169,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			buf_set_u32(reg_params[4].value, 0, 32, write_algorithm->address + target->working_area_size);
 			buf_set_u32(reg_params[5].value, 0, 32, algorithm_lr);
 
-			retval = target_start_algorithm(target, 0, NULL, 6, reg_params,
+			target_start_algorithm(target, 0, NULL, 6, reg_params,
 				write_algorithm->address + algorithm_programPage_entry_offset, 0, &armv7m_info);
 
 			buffer  += thisrun_count * 4;
@@ -2189,7 +2185,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 					break;
 			}
 
-			retval = target_wait_algorithm(target, 0, NULL, 6, reg_params,
+			target_wait_algorithm(target, 0, NULL, 6, reg_params,
 				0, 10000, &armv7m_info);
 		}
 
@@ -2208,7 +2204,6 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 					write_algorithm->address + algorithm_programPage_entry_offset, 0, 100000, &armv7m_info);
 		if (retval != ERROR_OK) {
 			LOG_ERROR("Error executing NuMicro Flash uninit algorithm");
-			retval = ERROR_FLASH_OPERATION_FAILED;
 		}
 
 		target_free_working_area(target, source);
@@ -2247,7 +2242,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			buf_set_u32(reg_params[4].value, 0, 32, write_algorithm->address + 126 * 1024);
 			buf_set_u32(reg_params[5].value, 0, 32, algorithm_lr);
 
-			retval = target_start_algorithm(target, 0, NULL, 6, reg_params,
+			target_start_algorithm(target, 0, NULL, 6, reg_params,
 				write_algorithm->address + algorithm_programPage_entry_offset, 0, &armv7m_info);
 
 			buffer  += thisrun_count * 4;
@@ -2263,7 +2258,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 					break;
 			}
 
-			retval = target_wait_algorithm(target, 0, NULL, 6, reg_params,
+			target_wait_algorithm(target, 0, NULL, 6, reg_params,
 				0, 10000, &armv7m_info);
 
 			if (thisrun_count == 0)
@@ -2276,7 +2271,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			buf_set_u32(reg_params[4].value, 0, 32, write_algorithm->address + 126 * 1024);
 			buf_set_u32(reg_params[5].value, 0, 32, algorithm_lr);
 
-			retval = target_start_algorithm(target, 0, NULL, 6, reg_params,
+			target_start_algorithm(target, 0, NULL, 6, reg_params,
 				write_algorithm->address + algorithm_programPage_entry_offset, 0, &armv7m_info);
 
 			buffer  += thisrun_count * 4;
@@ -2292,7 +2287,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 					break;
 			}
 
-			retval = target_wait_algorithm(target, 0, NULL, 6, reg_params,
+			target_wait_algorithm(target, 0, NULL, 6, reg_params,
 				0, 10000, &armv7m_info);
 		}
 
@@ -2311,7 +2306,6 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 					write_algorithm->address + algorithm_programPage_entry_offset, 0, 100000, &armv7m_info);
 		if (retval != ERROR_OK) {
 			LOG_ERROR("Error executing NuMicro Flash uninit algorithm");
-			retval = ERROR_FLASH_OPERATION_FAILED;
 		}
 
 		target_free_working_area(target, source);
@@ -2353,7 +2347,6 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			write_algorithm->address + algorithm_programPage_entry_offset, 0, 100000, &armv7m_info);
 		if (retval != ERROR_OK) {
 			LOG_ERROR("Error executing NuMicro init algorithm");
-			retval = ERROR_FLASH_OPERATION_FAILED;
 		}
 
 		// ProgramPage
@@ -2378,7 +2371,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			buf_set_u32(reg_params[4].value, 0, 32, write_algorithm->address + target->working_area_size);
 			buf_set_u32(reg_params[5].value, 0, 32, algorithm_lr);
 
-			retval = target_start_algorithm(target, 0, NULL, 6, reg_params,
+			target_start_algorithm(target, 0, NULL, 6, reg_params,
 				write_algorithm->address + algorithm_programPage_entry_offset, 0, &armv7m_info);
 
 			buffer  += thisrun_count * 4;
@@ -2394,7 +2387,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 					break;
 			}
 
-			retval = target_wait_algorithm(target, 0, NULL, 6, reg_params,
+			target_wait_algorithm(target, 0, NULL, 6, reg_params,
 				0, 10000, &armv7m_info);
 
 			if (thisrun_count == 0)
@@ -2407,7 +2400,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			buf_set_u32(reg_params[4].value, 0, 32, write_algorithm->address + target->working_area_size);
 			buf_set_u32(reg_params[5].value, 0, 32, algorithm_lr);
 
-			retval = target_start_algorithm(target, 0, NULL, 6, reg_params,
+			target_start_algorithm(target, 0, NULL, 6, reg_params,
 				write_algorithm->address + algorithm_programPage_entry_offset, 0, &armv7m_info);
 
 			buffer  += thisrun_count * 4;
@@ -2423,7 +2416,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 					break;
 			}
 
-			retval = target_wait_algorithm(target, 0, NULL, 6, reg_params,
+			target_wait_algorithm(target, 0, NULL, 6, reg_params,
 				0, 10000, &armv7m_info);
 		}
 
@@ -2442,7 +2435,6 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 					write_algorithm->address + algorithm_programPage_entry_offset, 0, 100000, &armv7m_info);
 		if (retval != ERROR_OK) {
 			LOG_ERROR("Error executing NuMicro Flash uninit algorithm");
-			retval = ERROR_FLASH_OPERATION_FAILED;
 		}
 
 		target_free_working_area(target, source);
@@ -2477,7 +2469,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			buf_set_u32(reg_params[2].value, 0, 32, thisrun_count);
 			buf_set_u32(reg_params[3].value, 0, 32, write_algorithm->address + target->working_area_size);
 
-			retval = target_start_algorithm(target, 0, NULL, 4, reg_params,
+			target_start_algorithm(target, 0, NULL, 4, reg_params,
 				write_algorithm->address + algorithm_programPage_entry_offset, 0, &armv7m_info);
 
 			buffer  += thisrun_count * 4;
@@ -2493,7 +2485,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 					break;
 			}
 
-			retval = target_wait_algorithm(target, 0, NULL, 4, reg_params,
+			target_wait_algorithm(target, 0, NULL, 4, reg_params,
 				0, 10000, &armv7m_info);
 
 			if (thisrun_count == 0)
@@ -2504,7 +2496,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			buf_set_u32(reg_params[2].value, 0, 32, thisrun_count);
 			buf_set_u32(reg_params[3].value, 0, 32, write_algorithm->address + target->working_area_size);
 
-			retval = target_start_algorithm(target, 0, NULL, 4, reg_params,
+			target_start_algorithm(target, 0, NULL, 4, reg_params,
 				write_algorithm->address + algorithm_programPage_entry_offset, 0, &armv7m_info);
 
 			buffer  += thisrun_count * 4;
@@ -2520,7 +2512,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 					break;
 			}
 
-			retval = target_wait_algorithm(target, 0, NULL, 4, reg_params,
+			target_wait_algorithm(target, 0, NULL, 4, reg_params,
 				0, 10000, &armv7m_info);
 		}
 
@@ -2590,7 +2582,6 @@ static int numicro_M2351_getinitinfo_ns(struct target *target, uint32_t *part_id
 		init_algorithm->address, 0, 100000, &armv7m_info);
 	if (retval != ERROR_OK) {
 		LOG_ERROR("Error executing NuMicro init info algorithm");
-		retval = ERROR_FLASH_OPERATION_FAILED;
 	}
 
 	target_free_working_area(target, init_algorithm);
@@ -2602,7 +2593,6 @@ static int numicro_M2351_getinitinfo_ns(struct target *target, uint32_t *part_id
 		retval = target_read_u32(target, address + 8, part_id);
 		if (retval != ERROR_OK) {
 			LOG_WARNING("NuMicro flash driver: Failed to Get PartID");
-			retval = ERROR_FLASH_OPERATION_FAILED;
 		}
 	}
 
@@ -2661,7 +2651,7 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 {
 	struct target *target = bank->target;
 	struct working_area *erase_algorithm;
-	uint32_t address;
+	uint32_t address = 0;
 	struct reg_param reg_params[6];
 	struct armv7m_common *armv7m = target_to_armv7m(target);
 	struct armv7m_algorithm armv7m_info;
@@ -2731,7 +2721,6 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 			erase_algorithm->address + algorithm_eraseSector_entry_offset, 0, 100000, &armv7m_info);
 		if (retval != ERROR_OK) {
 			LOG_ERROR("Error executing NuMicro init algorithm");
-			retval = ERROR_FLASH_OPERATION_FAILED;
 		}
 
 		destroy_reg_param(&reg_params[0]);
@@ -2768,7 +2757,6 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 				erase_algorithm->address + algorithm_eraseSector_entry_offset, 0, 100000, &armv7m_info);
 			if (retval != ERROR_OK) {
 				LOG_ERROR("Error executing NuMicro Flash erase algorithm");
-				retval = ERROR_FLASH_OPERATION_FAILED;
 				break;
 			}
 			else {
@@ -2803,7 +2791,6 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 					erase_algorithm->address + algorithm_eraseSector_entry_offset, 0, 100000, &armv7m_info);
 		if (retval != ERROR_OK) {
 			LOG_ERROR("Error executing NuMicro Flash uninit algorithm");
-			retval = ERROR_FLASH_OPERATION_FAILED;
 		}
 
 		target_free_working_area(target, erase_algorithm);
@@ -2861,7 +2848,6 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 				erase_algorithm->address + algorithm_eraseSector_entry_offset, 0, 100000, &armv7m_info);
 			if (retval != ERROR_OK) {
 				LOG_ERROR("Error executing NuMicro Flash erase algorithm");
-				retval = ERROR_FLASH_OPERATION_FAILED;
 				break;
 			}
 			else {
@@ -2882,7 +2868,6 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 					erase_algorithm->address + algorithm_eraseSector_entry_offset, 0, 100000, &armv7m_info);
 		if (retval != ERROR_OK) {
 			LOG_ERROR("Error executing NuMicro Flash programming algorithm");
-			retval = ERROR_FLASH_OPERATION_FAILED;
 		}
 
 		target_free_working_area(target, erase_algorithm);
@@ -2936,7 +2921,6 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 				erase_algorithm->address + algorithm_eraseSector_entry_offset, 0, 100000, &armv7m_info);
 			if (retval != ERROR_OK) {
 				LOG_ERROR("Error executing NuMicro init algorithm");
-				retval = ERROR_FLASH_OPERATION_FAILED;
 			}
 
 			destroy_reg_param(&reg_params[0]);
@@ -2994,7 +2978,6 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 
 				if (retval != ERROR_OK) {
 					LOG_ERROR("Error executing NuMicro Flash erase algorithm");
-					retval = ERROR_FLASH_OPERATION_FAILED;
 					break;
 				}
 				else {
@@ -3015,7 +2998,6 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 						erase_algorithm->address + algorithm_eraseSector_entry_offset, 0, 100000, &armv7m_info);
 			if (retval != ERROR_OK) {
 				LOG_ERROR("Error executing NuMicro Flash programming algorithm");
-				retval = ERROR_FLASH_OPERATION_FAILED;
 			}
 
 			target_free_working_area(target, erase_algorithm);
@@ -3025,104 +3007,104 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 			destroy_reg_param(&reg_params[3]);
 		}
 		else {
-		retval = target_write_u32(target, NUMICRO_FLASH_ISPCMD - m_addressMinusOffset, ISPCMD_ERASE);
-		if (retval != ERROR_OK)
-			return retval;
-
-		for (i = first; i <= last; i++) {
-			if (bank->sectors[i].is_erased == 1) {
-				LOG_DEBUG("sector %d has been erased recently. Skip to the next sector.", i);
-				continue;
-			}
-
-			address = bank->base + bank->sectors[i].offset;
-			LOG_DEBUG("erasing sector %d at address 0x%" PRIx32 "", i, address);
-			if ((m_flashInfo & NUMICRO_SPROM_MASK) != 0 &&
-				(address >= NUMICRO_SPROM_BASE) && (address < (NUMICRO_SPROM_BASE + m_pageSize))) {
-				LOG_DEBUG("SPROM is erasing");
-				retval = target_write_u32(target, NUMICRO_FLASH_ISPDAT - m_addressMinusOffset, NUMICRO_SPROM_ISPDAT);
-				if (retval != ERROR_OK)
-					return retval;
-
-				retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, NUMICRO_SPROM_BASE);
-				if (retval != ERROR_OK)
-					return retval;
-			}
-			else if ((m_flashInfo & NUMICRO_SPROM_MINI57_MASK) != 0 &&
-				(address >= NUMICRO_SPROM_BASE) && (address < (NUMICRO_SPROM_BASE + m_pageSize))) {
-				LOG_DEBUG("SPROM is erasing");
-				retval = target_write_u32(target, NUMICRO_FLASH_ISPDAT - m_addressMinusOffset, NUMICRO_SPROM_ISPDAT);
-				if (retval != ERROR_OK)
-					return retval;
-
-				retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, NUMICRO_SPROM_BASE);
-				if (retval != ERROR_OK)
-					return retval;
-			}
-			else if ((m_flashInfo & NUMICRO_SPROM_MINI57_MASK) != 0 &&
-				(address >= NUMICRO_SPROM_BASE2) && (address < (NUMICRO_SPROM_BASE2 + m_pageSize))) {
-				LOG_DEBUG("SPROM is erasing");
-				retval = target_write_u32(target, NUMICRO_FLASH_ISPDAT - m_addressMinusOffset, NUMICRO_SPROM_ISPDAT);
-				if (retval != ERROR_OK)
-					return retval;
-
-				retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, NUMICRO_SPROM_BASE2);
-				if (retval != ERROR_OK)
-					return retval;
-			}
-			else if ((m_flashInfo & NUMICRO_SPROM_MINI57_MASK) != 0 &&
-				(address >= NUMICRO_SPROM_BASE3) && (address < (NUMICRO_SPROM_BASE3 + m_pageSize))) {
-				LOG_DEBUG("SPROM is erasing");
-				retval = target_write_u32(target, NUMICRO_FLASH_ISPDAT - m_addressMinusOffset, NUMICRO_SPROM_ISPDAT);
-				if (retval != ERROR_OK)
-					return retval;
-
-				retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, NUMICRO_SPROM_BASE3);
-				if (retval != ERROR_OK)
-					return retval;
-			}
-			else {
-				retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, address & NUMICRO_TZ_MASK);
-				if (retval != ERROR_OK)
-					return retval;
-			}
-
-			retval = target_write_u32(target, NUMICRO_FLASH_ISPTRG - m_addressMinusOffset, ISPTRG_ISPGO); /* This is the only bit available */
+			retval = target_write_u32(target, NUMICRO_FLASH_ISPCMD - m_addressMinusOffset, ISPCMD_ERASE);
 			if (retval != ERROR_OK)
 				return retval;
 
-			/* wait for busy to clear - check the GO flag */
-			timeout = 100;
-			for (;;) {
-				retval = target_read_u32(target, NUMICRO_FLASH_ISPTRG - m_addressMinusOffset, &status);
-				if (retval != ERROR_OK)
-					return retval;
-				LOG_DEBUG("status: 0x%" PRIx32 "", status);
-				if (status == 0)
-					break;
-				if (timeout-- <= 0) {
-					LOG_DEBUG("timed out waiting for flash");
-					return ERROR_FAIL;
+			for (i = first; i <= last; i++) {
+				if (bank->sectors[i].is_erased == 1) {
+					LOG_DEBUG("sector %d has been erased recently. Skip to the next sector.", i);
+					continue;
 				}
-				busy_sleep(1);	/* can use busy sleep for short times. */
-			}
 
-			/* check for failure */
-			retval = target_read_u32(target, NUMICRO_FLASH_ISPCON - m_addressMinusOffset, &status);
-			if (retval != ERROR_OK)
-				return retval;
-			if ((status & ISPCON_ISPFF) != 0) {
-				LOG_DEBUG("failure: 0x%" PRIx32 "", status);
-				/* if bit is set, then must write to it to clear it. */
-				retval = target_write_u32(target, NUMICRO_FLASH_ISPCON - m_addressMinusOffset, (status | ISPCON_ISPFF));
+				address = bank->base + bank->sectors[i].offset;
+				LOG_DEBUG("erasing sector %d at address 0x%" PRIx32 "", i, address);
+				if ((m_flashInfo & NUMICRO_SPROM_MASK) != 0 &&
+					(address >= NUMICRO_SPROM_BASE) && (address < (NUMICRO_SPROM_BASE + m_pageSize))) {
+					LOG_DEBUG("SPROM is erasing");
+					retval = target_write_u32(target, NUMICRO_FLASH_ISPDAT - m_addressMinusOffset, NUMICRO_SPROM_ISPDAT);
+					if (retval != ERROR_OK)
+						return retval;
+
+					retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, NUMICRO_SPROM_BASE);
+					if (retval != ERROR_OK)
+						return retval;
+				}
+				else if ((m_flashInfo & NUMICRO_SPROM_MINI57_MASK) != 0 &&
+					(address >= NUMICRO_SPROM_BASE) && (address < (NUMICRO_SPROM_BASE + m_pageSize))) {
+					LOG_DEBUG("SPROM is erasing");
+					retval = target_write_u32(target, NUMICRO_FLASH_ISPDAT - m_addressMinusOffset, NUMICRO_SPROM_ISPDAT);
+					if (retval != ERROR_OK)
+						return retval;
+
+					retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, NUMICRO_SPROM_BASE);
+					if (retval != ERROR_OK)
+						return retval;
+				}
+				else if ((m_flashInfo & NUMICRO_SPROM_MINI57_MASK) != 0 &&
+					(address >= NUMICRO_SPROM_BASE2) && (address < (NUMICRO_SPROM_BASE2 + m_pageSize))) {
+					LOG_DEBUG("SPROM is erasing");
+					retval = target_write_u32(target, NUMICRO_FLASH_ISPDAT - m_addressMinusOffset, NUMICRO_SPROM_ISPDAT);
+					if (retval != ERROR_OK)
+						return retval;
+
+					retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, NUMICRO_SPROM_BASE2);
+					if (retval != ERROR_OK)
+						return retval;
+				}
+				else if ((m_flashInfo & NUMICRO_SPROM_MINI57_MASK) != 0 &&
+					(address >= NUMICRO_SPROM_BASE3) && (address < (NUMICRO_SPROM_BASE3 + m_pageSize))) {
+					LOG_DEBUG("SPROM is erasing");
+					retval = target_write_u32(target, NUMICRO_FLASH_ISPDAT - m_addressMinusOffset, NUMICRO_SPROM_ISPDAT);
+					if (retval != ERROR_OK)
+						return retval;
+
+					retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, NUMICRO_SPROM_BASE3);
+					if (retval != ERROR_OK)
+						return retval;
+				}
+				else {
+					retval = target_write_u32(target, NUMICRO_FLASH_ISPADR - m_addressMinusOffset, address & NUMICRO_TZ_MASK);
+					if (retval != ERROR_OK)
+						return retval;
+				}
+
+				retval = target_write_u32(target, NUMICRO_FLASH_ISPTRG - m_addressMinusOffset, ISPTRG_ISPGO); /* This is the only bit available */
 				if (retval != ERROR_OK)
 					return retval;
-			}
-			else {
-				bank->sectors[i].is_erased = 1;
+
+				/* wait for busy to clear - check the GO flag */
+				timeout = 0;
+				for (;;) {
+					retval = target_read_u32(target, NUMICRO_FLASH_ISPTRG - m_addressMinusOffset, &status);
+					if (retval != ERROR_OK)
+						return retval;
+					LOG_DEBUG("status: 0x%" PRIx32 "", status);
+					if (status == 0)
+						break;
+					if (timeout++ > 100) {
+						LOG_DEBUG("timed out waiting for flash");
+						return ERROR_FAIL;
+					}
+					busy_sleep(1);	/* can use busy sleep for short times. */
+				}
+
+				/* check for failure */
+				retval = target_read_u32(target, NUMICRO_FLASH_ISPCON - m_addressMinusOffset, &status);
+				if (retval != ERROR_OK)
+					return retval;
+				if ((status & ISPCON_ISPFF) != 0) {
+					LOG_DEBUG("failure: 0x%" PRIx32 "", status);
+					/* if bit is set, then must write to it to clear it. */
+					retval = target_write_u32(target, NUMICRO_FLASH_ISPCON - m_addressMinusOffset, (status | ISPCON_ISPFF));
+					if (retval != ERROR_OK)
+						return retval;
+				}
+				else {
+					bank->sectors[i].is_erased = 1;
+				}
 			}
 		}
-	}
 	}
 	else { // m_M23SecureDebugState == NUMICRO_M23_SECURE_DEBUG_NS
 		if (strcmp(m_target_name, "M2354") == 0) {
@@ -3170,7 +3152,6 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 					erase_algorithm->address + algorithm_eraseSector_entry_offset, 0, 100000, &armv7m_info);
 				if (retval != ERROR_OK) {
 					LOG_ERROR("Error executing NuMicro Flash erase algorithm");
-					retval = ERROR_FLASH_OPERATION_FAILED;
 					break;
 				}
 				else {
@@ -3223,7 +3204,6 @@ static int numicro_erase(struct flash_bank *bank, int first, int last)
 					erase_algorithm->address, 0, 100000, &armv7m_info);
 				if (retval != ERROR_OK) {
 					LOG_ERROR("Error executing NuMicro Flash erase algorithm");
-					retval = ERROR_FLASH_OPERATION_FAILED;
 					break;
 				}
 				else {
@@ -3248,7 +3228,7 @@ static int numicro_write(struct flash_bank *bank, const uint8_t *buffer,
 		uint32_t offset, uint32_t count)
 {
 	struct target *target = bank->target;
-	uint32_t timeout, status, rdat;
+	uint32_t status, rdat;
 	uint8_t *new_buffer = NULL;
 	int retval = ERROR_OK;
 
@@ -3304,6 +3284,7 @@ static int numicro_write(struct flash_bank *bank, const uint8_t *buffer,
 
 			LOG_DEBUG("write longword @ %08X", offset + i);
 
+			uint32_t timeout;
 			uint8_t padding[4] = {0xff, 0xff, 0xff, 0xff};
 			memcpy(padding, buffer + i, MIN(4, count-i));
 
@@ -3318,7 +3299,7 @@ static int numicro_write(struct flash_bank *bank, const uint8_t *buffer,
 				return retval;
 
 			/* wait for busy to clear - check the GO flag */
-			timeout = 100;
+			timeout = 0;
 			for (;;) {
 				retval = target_read_u32(target, NUMICRO_FLASH_ISPTRG - m_addressMinusOffset, &status);
 				if (retval != ERROR_OK)
@@ -3326,7 +3307,7 @@ static int numicro_write(struct flash_bank *bank, const uint8_t *buffer,
 					LOG_DEBUG("status: 0x%" PRIx32 "", status);
 				if (status == 0)
 					break;
-				if (timeout-- <= 0) {
+				if (timeout++ > 100) {
 					LOG_DEBUG("timed out waiting for flash");
 					return ERROR_FAIL;
 				}
