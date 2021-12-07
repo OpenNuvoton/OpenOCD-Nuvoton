@@ -74,6 +74,7 @@ struct nulink_usb_handle_s {
 	uint32_t reset_command;
 	uint32_t extMode_command;
 	uint32_t io_voltage;
+	uint32_t chip_type;
 } *m_nulink_usb_handle;
 
 struct nulink_usb_internal_api_s {
@@ -132,11 +133,10 @@ enum EXTMODE_E {
 
 static void print64BytesBufferContent(char *bufferName, uint8_t *buf, int size)
 {
-	unsigned i;
+	unsigned i, j;
 	LOG_DEBUG("%s:", bufferName);
 
 	for (i = 0; i < 4; i++) {
-		unsigned j;
 		j = i * 16;
 		LOG_DEBUG("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ",
 		buf[j + 0],  buf[j + 1],  buf[j + 2],  buf[j + 3],
@@ -491,8 +491,6 @@ static int nulink_usb_reset(void *handle)
 	int res;
 	struct nulink_usb_handle_s *h = handle;
 
-	assert(handle != NULL);
-
 	switch (h->reset_command) {
 		case RESET_AUTO:
 			LOG_DEBUG("nulink_usb_reset: RESET_AUTO");
@@ -534,6 +532,8 @@ static int nulink_usb_reset(void *handle)
 			LOG_DEBUG("nulink_usb_reset: extMode_command not found");
 			break;
 	}
+
+	assert(handle != NULL);
 
 	m_nulink_usb_api.nulink_usb_init_buffer(handle, 4 * 4);
 	/* set command ID */
@@ -807,7 +807,7 @@ static int nulink_usb_read_mem8(void *handle, uint32_t addr, uint16_t len,
 {
 	int res = ERROR_OK;
 	unsigned i, count;
-	unsigned offset = 0;
+	unsigned alignedAddr, offset = 0;
 	uint32_t bytes_remaining = 4;
 	struct nulink_usb_handle_s *h = handle;
 
@@ -817,7 +817,6 @@ static int nulink_usb_read_mem8(void *handle, uint32_t addr, uint16_t len,
 
 	/* check whether data is word aligned */
 	if (addr % 4) {
-		unsigned alignedAddr;
 		alignedAddr = addr / 4;
 		alignedAddr = alignedAddr * 4;
 		offset = addr - alignedAddr;
@@ -894,7 +893,7 @@ static int nulink_usb_write_mem8(void *handle, uint32_t addr, uint16_t len,
 {
 	int res = ERROR_OK;
 	unsigned i, count;
-	unsigned offset = 0;
+	unsigned alignedAddr, offset = 0;
 	uint32_t bytes_remaining = 12;
 	uint32_t u32bufferData;
 	struct nulink_usb_handle_s *h = handle;
@@ -905,7 +904,6 @@ static int nulink_usb_write_mem8(void *handle, uint32_t addr, uint16_t len,
 
 	/* check whether data is word aligned */
 	if (addr % 4) {
-		unsigned alignedAddr;
 		alignedAddr = addr / 4;
 		alignedAddr = alignedAddr * 4;
 		offset = addr - alignedAddr;
@@ -1053,7 +1051,7 @@ static int nulink_usb_read_mem32(void *handle, uint32_t addr, uint16_t len,
 			  uint8_t *buffer)
 {
 	int res = ERROR_OK;
-	unsigned i;
+	unsigned i, count;
 	uint32_t bytes_remaining = 12;
 	struct nulink_usb_handle_s *h = handle;
 
@@ -1068,7 +1066,6 @@ static int nulink_usb_read_mem32(void *handle, uint32_t addr, uint16_t len,
 	}
 
 	while (len) {
-		unsigned count;
 		if (len < bytes_remaining)
 			bytes_remaining = len;
 
@@ -1129,7 +1126,7 @@ static int nulink_usb_write_mem32(void *handle, uint32_t addr, uint16_t len,
 	const uint8_t *buffer)
 {
 	int res = ERROR_OK;
-	unsigned i;
+	unsigned i, count;
 	uint32_t bytes_remaining = 12;
 	uint32_t u32bufferData;
 	struct nulink_usb_handle_s *h = handle;
@@ -1145,7 +1142,6 @@ static int nulink_usb_write_mem32(void *handle, uint32_t addr, uint16_t len,
 	}
 
 	while (len) {
-		unsigned count;
 		if (len < bytes_remaining)
 			bytes_remaining = len;
 
@@ -1216,6 +1212,7 @@ static int nulink_usb_read_mem(void *handle, uint32_t addr, uint32_t size,
 		uint32_t count, uint8_t *buffer)
 {
 	int retval = ERROR_OK;
+	uint32_t bytes_remaining;
 	struct nulink_usb_handle_s *h = handle;
 
 	//LOG_DEBUG("nulink_usb_read_mem: addr(%04x), size(%d), count(%d)", addr, size, count);
@@ -1224,7 +1221,7 @@ static int nulink_usb_read_mem(void *handle, uint32_t addr, uint32_t size,
 	count *= size;
 
 	while (count) {
-		uint32_t bytes_remaining;
+
 		bytes_remaining = nulink_max_block_size(h->max_mem_packet, addr);
 
 		if (count < bytes_remaining)
@@ -1279,6 +1276,7 @@ static int nulink_usb_write_mem(void *handle, uint32_t addr, uint32_t size,
 		uint32_t count, const uint8_t *buffer)
 {
 	int retval = ERROR_OK;
+	uint32_t bytes_remaining;
 	struct nulink_usb_handle_s *h = handle;
 	extern char *m_target_name;
 
@@ -1298,7 +1296,6 @@ static int nulink_usb_write_mem(void *handle, uint32_t addr, uint32_t size,
 	count *= size;
 
 	while (count) {
-		uint32_t bytes_remaining;
 		bytes_remaining = nulink_max_block_size(h->max_mem_packet, addr);
 
 		if (count < bytes_remaining)
@@ -1392,8 +1389,8 @@ static int nulink_speed(void *handle, int khz, bool query)
 		/* set max SWD clock */
 		h_u32_to_le(h->cmdbuf + h->cmdidx, max_ice_clock);
 		h->cmdidx += 4;
-		/* chip type: NUC_CHIP_TYPE_GENERAL_V6M */
-		h_u32_to_le(h->cmdbuf + h->cmdidx, 0);
+		/* chip type */
+		h_u32_to_le(h->cmdbuf + h->cmdidx, h->chip_type);
 		h->cmdidx += 4;
 		/* IO voltage */
 		h_u32_to_le(h->cmdbuf + h->cmdidx, h->io_voltage);
@@ -1631,10 +1628,12 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 	}
 
 	/* SWD clock rate : 1MHz */
+	/* chip type: NUC_CHIP_TYPE_GENERAL_V6M */
+	h->chip_type = 0;
 	nulink_speed(h, param->initial_interface_speed, false);
 
 	LOG_DEBUG("nulink_usb_open: we manually perform nulink_usb_reset");
-	h->reset_command = RESET_HW;
+	h->reset_command = RESET_AUTO;
 	h->extMode_command = EXTMODE_NORMAL;
 	if (nulink_usb_reset(h) != ERROR_OK) {
 		h->extMode_command = EXTMODE_M0A21;
