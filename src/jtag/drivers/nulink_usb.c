@@ -131,6 +131,10 @@ enum EXTMODE_E {
 	EXTMODE_M030G  = 0x10000 , /* Support M030G */
 };
 
+enum NUC_CHIP_TYPE_E {
+	NUC_CHIP_TYPE_M460	= 0x49A,
+};
+
 static void print64BytesBufferContent(char *bufferName, uint8_t *buf, int size)
 {
 	unsigned i, j;
@@ -1633,15 +1637,21 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 	nulink_speed(h, param->initial_interface_speed, false);
 
 	LOG_DEBUG("nulink_usb_open: we manually perform nulink_usb_reset");
-	h->reset_command = RESET_AUTO;
+	h->reset_command = RESET_HW;
 	h->extMode_command = EXTMODE_NORMAL;
 	if (nulink_usb_reset(h) != ERROR_OK) {
-		h->extMode_command = EXTMODE_M0A21;
+		h->chip_type = NUC_CHIP_TYPE_M460;
+		nulink_speed(h, param->initial_interface_speed, false);
 		if (nulink_usb_reset(h) != ERROR_OK) {
-			h->extMode_command = EXTMODE_M030G;
+			h->chip_type = 0;
+			nulink_speed(h, param->initial_interface_speed, false);
+			h->extMode_command = EXTMODE_M0A21;
 			if (nulink_usb_reset(h) != ERROR_OK) {
-				LOG_ERROR("nulink_usb_reset failed");
-				goto error_open;
+				h->extMode_command = EXTMODE_M030G;
+				if (nulink_usb_reset(h) != ERROR_OK) {
+					LOG_ERROR("nulink_usb_reset failed");
+					goto error_open;
+				}
 			}
 		}
 	}
