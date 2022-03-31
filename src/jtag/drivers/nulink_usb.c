@@ -1488,6 +1488,7 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 		else if (result == 0) {
 			sprintf(buf, "start /b \"\" \"c:\\Program Files\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe\" -o wait");
 			result = system(buf);
+			busy_sleep(500);
 			LOG_DEBUG("Wait NuLink.exe (result: %d)", result);
 		}
 	}
@@ -1512,6 +1513,7 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 			else if (result == 0) {
 				sprintf(buf, "start /b \"\" \"c:\\Program Files (x86)\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe\" -o wait");
 				result = system(buf);
+				busy_sleep(500);
 				LOG_DEBUG("Wait NuLink.exe (result: %d)", result);
 			}
 		}
@@ -1519,7 +1521,6 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 			LOG_DEBUG("Skip running NuLink.exe");
 		}
 	}
-
 	h = calloc(1, sizeof(struct nulink_usb_handle_s));
 
 	if (h == 0) {
@@ -1547,9 +1548,9 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 		m_nulink_usb_api.nulink_usb_xfer = nulink2_usb_xfer;
 		m_nulink_usb_api.nulink_usb_init_buffer = nulink2_usb_init_buffer;
 		h->interface_num = NULINK2_INTERFACE_NUM;
-		h->rx_ep = NULINK2_RX_EP;
-		h->tx_ep = NULINK2_TX_EP;
-		h->max_packet_size = jtag_libusb_get_maxPacketSize(h->fd, 0, h->interface_num);
+//		h->rx_ep = NULINK2_RX_EP;
+//		h->tx_ep = NULINK2_TX_EP;
+		h->max_packet_size = jtag_libusb_get_maxPacketSize(h->fd, 0, h->interface_num, &h->rx_ep, &h->tx_ep);
 		if (h->max_packet_size == (uint16_t)-1) {
 			h->max_packet_size = NULINK2_HID_MAX_SIZE;
 		}
@@ -1566,9 +1567,9 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 		m_nulink_usb_api.nulink_usb_xfer = nulink_usb_xfer;
 		m_nulink_usb_api.nulink_usb_init_buffer = nulink_usb_init_buffer;
 		h->interface_num = NULINK_INTERFACE_NUM;
-		h->rx_ep = NULINK_RX_EP;
-		h->tx_ep = NULINK_TX_EP;
-		h->max_packet_size = jtag_libusb_get_maxPacketSize(h->fd, 0, h->interface_num);
+//		h->rx_ep = NULINK_RX_EP;
+//		h->tx_ep = NULINK_TX_EP;
+		h->max_packet_size = jtag_libusb_get_maxPacketSize(h->fd, 0, h->interface_num, &h->rx_ep, &h->tx_ep);
 		if (h->max_packet_size == (uint16_t)-1) {
 			h->max_packet_size = NULINK_HID_MAX_SIZE;
 		}

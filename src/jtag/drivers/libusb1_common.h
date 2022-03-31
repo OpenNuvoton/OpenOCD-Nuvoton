@@ -86,7 +86,11 @@ int jtag_libusb_choose_interface(struct jtag_libusb_device_handle *devh,
 		unsigned int *usb_write_ep,
 		int bclass, int subclass, int protocol);
 int jtag_libusb_get_pid(struct jtag_libusb_device *dev, uint16_t *pid);
-uint16_t jtag_libusb_get_maxPacketSize(struct jtag_libusb_device_handle *devh, uint8_t configuration, uint8_t interface_num);
+uint16_t jtag_libusb_get_maxPacketSize(struct jtag_libusb_device_handle *devh,
+		uint8_t configuration,
+		uint8_t interface_num,
+		unsigned int *usb_read_ep,
+		unsigned int *usb_write_ep);
 #if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 int jtag_libusb_nuvoton_mutex_lock(void);
 int jtag_libusb_nuvoton_mutex_unlock(void);
