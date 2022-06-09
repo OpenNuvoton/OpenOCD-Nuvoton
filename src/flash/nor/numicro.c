@@ -810,6 +810,9 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"M467HJHAE", 0x01B46760, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
 	{"M467H3JJHAN", 0x01B46B50, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
 	{"M467H3HJHAN", 0x01B46B61, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
+	{"M467H3SJHAE", 0x01B46F10, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
+	{"M467H3KJHAE", 0x01B46F40, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
+	{"M467H3JJHAE", 0x01B46F51, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
 	{"M463KGCAE", 0x01C46340, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
 	{"M464KGCAE", 0x01C46440, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
 	{"M463VGCAE", 0x01C46330, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
@@ -821,6 +824,11 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"M464LGCAE", 0x01C46400, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
 	{"M463YGCAE", 0x01C46390, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
 	{"M464YGCAE", 0x01C46490, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
+	{"M460KGCAE", 0x01C46040, NUMICRO_BANKS_OFFSET(256*1024, 0*1024, 8*1024,  16)},
+	{"M460SGCAE", 0x01C46010, NUMICRO_BANKS_OFFSET(256*1024, 0*1024, 8*1024,  16)},
+	{"M460AGCAE", 0x01C46080, NUMICRO_BANKS_OFFSET(256*1024, 0*1024, 8*1024,  16)},
+	{"M460LGCAE", 0x01C46000, NUMICRO_BANKS_OFFSET(256*1024, 0*1024, 8*1024,  16)},
+	{"M460YGCAE", 0x01C46090, NUMICRO_BANKS_OFFSET(256*1024, 0*1024, 8*1024,  16)},
 
 	/* I94100 */
 	{"I94124A", 0x1D0105BA, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
@@ -1856,9 +1864,16 @@ static int numicro_init_isp(struct target *target)
 			return retval;
 
 		/* Write one to undocumented flash control register */
-		retval = target_write_u32(target, NUMICRO_FLASH_CHEAT - m_addressMinusOffset, 1);
-		if (retval != ERROR_OK)
+		if (armv7m == NULL) {
+			/* something is very wrong if armv7m is NULL */
+			LOG_ERROR("unable to get armv7m target");
 			return retval;
+		}
+		if (armv7m->arm.is_armv6m) {
+			retval = target_write_u32(target, NUMICRO_FLASH_CHEAT - m_addressMinusOffset, 1);
+			if (retval != ERROR_OK)
+				return retval;
+		}
 	}
 
 	LOG_DEBUG("numicro_init_isp is done.");
