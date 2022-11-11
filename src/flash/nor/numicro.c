@@ -148,6 +148,18 @@ struct numicro_cpu_type {
 	struct numicro_flash_bank_type bank[NUMICRO_MAX_FLASH_BANKS];
 };
 
+typedef enum {
+	NUC_CHIP_TYPE_GENERAL_V6M	= 0x0,
+	NUC_CHIP_TYPE_M031			= 0x10A,
+	NUC_CHIP_TYPE_M030G			= 0x10F,
+	NUC_CHIP_TYPE_M2351			= 0x321,
+	NUC_CHIP_TYPE_GENERAL_V7M	= 0x400,
+	NUC_CHIP_TYPE_M471			= 0x40A,
+	NUC_CHIP_TYPE_M480			= 0x411,
+	NUC_CHIP_TYPE_M460			= 0x49A,
+	NUC_CHIP_TYPE_NUC505		= 0x500
+} NUC_CHIP_TYPE_E;
+
 /* If DataFlash size equals zero, it means the actual size depends on config settings. */
 #define NUMICRO_BANKS_GENERAL(aprom_size, data_size, ldrom_size, config_size) \
 	.n_banks = 4, \
@@ -173,8 +185,6 @@ struct numicro_cpu_type {
 static const struct numicro_cpu_type NuMicroParts[] = {
 	/*PART Name*//*PART ID*/ /*Banks*/
 	/* M031 */
-	{"M031LIAAE", 0x01131100, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 8*1024, 12)},
-	{"M032LIAAE", 0x01132100, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 8*1024, 12)},
 	{"M031SIAAE", 0x01131110, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 8*1024, 12)},
 	{"M032SIAAE", 0x01132110, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 8*1024, 12)},
 	{"M031KIAAE", 0x01131140, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 8*1024, 12)},
@@ -224,6 +234,7 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"M030GTD1AE", 0x011306E0, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 2*1024, 12)},
 	{"M030GGC0AE", 0x011306F1, NUMICRO_BANKS_GENERAL(32*1024, 0*1024, 2*1024, 12)},
 	{"M030GTC0AE", 0x011306E1, NUMICRO_BANKS_GENERAL(32*1024, 0*1024, 2*1024, 12)},
+	{"M029GGC0AE", 0x011296F1, NUMICRO_BANKS_GENERAL(32*1024, 0*1024, 2*1024, 12)},
 	{"M030FD2AE", 0x01130DB0, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 2*1024, 12)},
 	{"M031GGD2AE", 0x011316F0, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 2*1024, 12)},
 	{"M031GTD2AE", 0x011316E0, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 2*1024, 12)},
@@ -244,12 +255,12 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"M071VG4AE", 0x01607130, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 8)},
 
 	/* M0A21 */
-	{"M0A21OB1AC", 0x015A2121, NUMICRO_BANKS_GENERAL(16*1024, 0*1024, 2*1024, 12)},
 	{"M0A21OC1AC", 0x015A2120, NUMICRO_BANKS_GENERAL(32*1024, 0*1024, 2*1024, 12)},
-	{"M0A21EB1AC", 0x015A21A1, NUMICRO_BANKS_GENERAL(16*1024, 0*1024, 2*1024, 12)},
 	{"M0A21EC1AC", 0x015A21A0, NUMICRO_BANKS_GENERAL(32*1024, 0*1024, 2*1024, 12)},
 	{"M0A23OC1AC", 0x015A2320, NUMICRO_BANKS_GENERAL(32*1024, 0*1024, 2*1024, 12)},
 	{"M0A23EC1AC", 0x015A23A0, NUMICRO_BANKS_GENERAL(32*1024, 0*1024, 2*1024, 12)},
+	{"M0A23OC1ACU", 0x015A2321, NUMICRO_BANKS_GENERAL(32*1024, 0*1024, 2*1024, 12)},
+	{"M0A23EC1ACU", 0x015A23A1, NUMICRO_BANKS_GENERAL(32*1024, 0*1024, 2*1024, 12)},
 
 	/* M051AN */
 	{"M052LAN", 0x00005200, NUMICRO_BANKS_GENERAL(8*1024, 4*1024, 4*1024, 4)},
@@ -647,6 +658,12 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"NUC1262LE4AE", 0x01812600, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 8)},
 	{"NUC1262NE4AE", 0x01812690, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 8)},
 
+	/* NUC1263 */
+	{"NUC1263SD4AE", 0x01D12610, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 8)},
+	{"NUC1263LD4AE", 0x01D12600, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 8)},
+	{"NUC1263ND4AE", 0x01D12690, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 8)},
+	{"NUC1263ZD4AE", 0x01D126E0, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 8)},
+
 	/* NUC131AE */
 	{"NUC131LC2AE", 0x10013103, NUMICRO_BANKS_GENERAL(32*1024, 4*1024, 4*1024, 8)},
 	{"NUC131LD2AE", 0x10013100, NUMICRO_BANKS_GENERAL(64*1024, 4*1024, 4*1024, 8)},
@@ -813,6 +830,12 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"M467H3SJHAE", 0x01B46F10, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
 	{"M467H3KJHAE", 0x01B46F40, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
 	{"M467H3JJHAE", 0x01B46F51, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
+	{"M463SJHAN", 0x01B46B12, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
+	{"M463KJHAN", 0x01B46B42, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
+	{"M467SJHAN", 0x01B46F11, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
+	{"M467KJHAN", 0x01B46F41, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
+	{"M467JJHAN", 0x01B46F52, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
+	{"M467HJHAN", 0x01B46F61, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
 	{"M463KGCAE", 0x01C46340, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
 	{"M464KGCAE", 0x01C46440, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
 	{"M463VGCAE", 0x01C46330, NUMICRO_BANKS_OFFSET(1024*1024, 0*1024, 8*1024, 16)},
@@ -978,6 +1001,7 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"M2354KJFAE", 0xA1735440, NUMICRO_BANKS_GENERAL(0x10100000, 0*1024, 16*1024, 16)},
 	{"M2354SJFAE", 0xA1735410, NUMICRO_BANKS_GENERAL(0x10100000, 0*1024, 16*1024, 16)},
 	{"M2354LJFAE", 0xA1735400, NUMICRO_BANKS_GENERAL(0x10100000, 0*1024, 16*1024, 16)},
+	{"M2354LJFAE", 0xA173540C, NUMICRO_BANKS_GENERAL(0x10100000, 0*1024, 16*1024, 16)},
 
 	/* M251 */
 	{"M252FC2AE", 0x00F252B0, NUMICRO_BANKS_GENERAL(32*1024, 0*1024, 4*1024, 12)},
@@ -1013,27 +1037,37 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	{"M251LG6AE", 0x00F25102, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 12)},
 	{"M254SD3AE", 0x00F25410, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 12)},
 	{"M254SE3AE", 0x00F25411, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
-	{"M254PD3AE", 0x00F25470, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 12)},
-	{"M254PE3AE", 0x00F25471, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
+	{"M254QD3AE", 0x00F25470, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 12)},
+	{"M254QE3AE", 0x00F25471, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
 	{"M254KD3AE", 0x00F25440, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 12)},
 	{"M254KE3AE", 0x00F25441, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
 	{"M256SD3AE", 0x00F25610, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 12)},
 	{"M256SE3AE", 0x00F25611, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
-	{"M256PD3AE", 0x00F25670, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 12)},
-	{"M256PE3AE", 0x00F25671, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
+	{"M256QD3AE", 0x00F25670, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 12)},
+	{"M256QE3AE", 0x00F25671, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
 	{"M256KD3AE", 0x00F25640, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 12)},
 	{"M256KE3AE", 0x00F25641, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
 	{"M258SD3AE", 0x00F25810, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 12)},
 	{"M258SE3AE", 0x00F25811, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
-	{"M258PD3AE", 0x00F25870, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 12)},
-	{"M258PE3AE", 0x00F25871, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
+	{"M258QD3AE", 0x00F25870, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 12)},
+	{"M258QE3AE", 0x00F25871, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
 	{"M258KD3AE", 0x00F25840, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 12)},
 	{"M258KE3AE", 0x00F25841, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
+	{"M254SD2AE", 0x01A25411, NUMICRO_BANKS_GENERAL( 64*1024, 0*1024,  8*1024, 12)},
+	{"M256MD2AE", 0x01A256A1, NUMICRO_BANKS_GENERAL( 64*1024, 0*1024,  8*1024, 12)},
+	{"M256SD2AE", 0x01A25611, NUMICRO_BANKS_GENERAL( 64*1024, 0*1024,  8*1024, 12)},
+	{"M254MD2AE", 0x01A254A1, NUMICRO_BANKS_GENERAL( 64*1024, 0*1024,  8*1024, 12)},
+	{"M258KG6AE", 0x01925841, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 32*1024, 12)},
+	{"M254KG6AE", 0x01925441, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 32*1024, 12)},
+	{"M258QG6AE", 0x01925871, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 32*1024, 12)},
+	{"M256QG6AE", 0x01925671, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 32*1024, 12)},
+	{"M258SG6AE", 0x01925811, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 32*1024, 12)},
+	{"M254SG6AE", 0x01925411, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 32*1024, 12)},
 
 	/* M253 */
-	{"M253ZE3AE", 0x00F253E0, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
-	{"M253LE3AE", 0x00F25301, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
-	{"M253LD3AE", 0x00F25300, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 12)},
+	{"M253ZE3AE", 0x00F250E0, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
+	{"M253LE3AE", 0x00F25001, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 12)},
+	{"M253LD3AE", 0x00F25000, NUMICRO_BANKS_GENERAL(64*1024, 0*1024, 4*1024, 12)},
 
 	/* M261 */
 	{"M261ZIAAE", 0x00261000, NUMICRO_BANKS_GENERAL(512*1024, 0*1024, 4*1024, 16)},
@@ -1069,6 +1103,7 @@ uint32_t m_addressFlashOffset = 0;
 uint32_t m_M23SecureDebugState = NUMICRO_M23_SECURE_DEBUG_NORMAL;
 uint32_t m_flashInfo = 0; /* bit 0:SPROM exists; */
 char *m_target_name = "";
+NUC_CHIP_TYPE_E m_eChipType = NUC_CHIP_TYPE_GENERAL_V7M;
 bool m_bSPIMFlashSectorErased = 0;
 
 /* Private methods */
@@ -1112,7 +1147,7 @@ static int numicro_get_arm_arch(struct target *target)
 			}
 		}
 		else {
-			// M251 and NUC1262
+			// M251 and NUC1262, NUC1263
 			m_M23SecureDebugState = NUMICRO_M23_SECURE_DEBUG_NORMAL;
 		}
 
@@ -1864,6 +1899,10 @@ static int numicro_init_isp(struct target *target)
 			return retval;
 
 		/* Write one to undocumented flash control register */
+	//	retval = target_write_u32(target, NUMICRO_FLASH_CHEAT - m_addressMinusOffset, 1);
+	//	if (retval != ERROR_OK)
+	//		return retval;
+
 		if (armv7m == NULL) {
 			/* something is very wrong if armv7m is NULL */
 			LOG_ERROR("unable to get armv7m target");
@@ -1995,7 +2034,8 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 			if (retval != ERROR_OK)
 				return retval;
 		}
-		else if (strcmp(m_target_name, "NUC1262") == 0) {
+		else if ((strcmp(m_target_name, "NUC1262") == 0) ||
+				(strcmp(m_target_name, "NUC1263") == 0)) {
 			if (target_alloc_working_area(target, sizeof(numicro_M0_flash_write_code),
 				&write_algorithm) != ERROR_OK) {
 				LOG_WARNING("no working area available, can't do block memory writes");
@@ -3764,6 +3804,7 @@ static int numicro_get_flash_size(struct flash_bank *bank, const struct numicro_
 	return ERROR_FLASH_OPERATION_FAILED;
 }
 
+int nulink_usb_reconnect(int chip_type);
 static int numicro_probe(struct flash_bank *bank)
 {
 	uint32_t flash_size = 0, offset = 0, page_size;
@@ -3787,6 +3828,13 @@ static int numicro_probe(struct flash_bank *bank)
 
 	/* decide the page size */
 	if (armv7m->arm.is_armv6m) { /* M0 */
+		if (armv7m->arm.is_NUC_M0_FMC_MSB4) {
+			m_eChipType = NUC_CHIP_TYPE_M031;
+		}
+		else {
+			m_eChipType = NUC_CHIP_TYPE_GENERAL_V6M;
+		}
+
 		if ((cpu->partid == 0x00295C50/* NUC029LGE */) ||
 			(cpu->partid == 0x00295C51/* NUC029SGE */) ||
 			(cpu->partid == 0x00295C52/* NUC029KGE */) ||
@@ -3809,15 +3857,18 @@ static int numicro_probe(struct flash_bank *bank)
 		}
 	}
 	else if (armv7m->arm.is_armv8m) { /* M23 */
-		if ((cpu->partid & 0xFFFFFF00) == 0x01812600/* NUC1262 */ ||
+		m_eChipType = NUC_CHIP_TYPE_M2351;
+		if (((cpu->partid & 0xFFFFFF00) == 0x01812600)/* NUC1262 */ ||
+			((cpu->partid & 0xFFFFFF00) == 0x01D12600)/* NUC1263 */ ||
 			 armv7m->arm.is_armv8mSecureExtend) {
-			m_pageSize = NUMICRO_PAGESIZE * 4; /* for M261, M2351 and M2354 */
+			m_pageSize = NUMICRO_PAGESIZE * 4;
 		}
 		else {
 			m_pageSize = NUMICRO_PAGESIZE;     /* for M251 */
 		}
 	}
 	else { /* armv7m (M4) */
+		m_eChipType = NUC_CHIP_TYPE_GENERAL_V7M;
 		if (((cpu->partid & 0xFFFFFF00) == 0x01347900/* M479   */) ||
 			((cpu->partid & 0xFFFFF000) == 0x00D48000/* M480   */) ||
 			((cpu->partid & 0xFFFFF000) == 0x01348000/* M480LD */) ||
@@ -3851,6 +3902,7 @@ static int numicro_probe(struct flash_bank *bank)
 		((cpu->partid & 0xFFFFFF00) == 0x00C05200/* NUC126  */) ||
 		((cpu->partid & 0xFFFFFF00) == 0x01205200/* NUC1261 */) ||
 		((cpu->partid & 0xFFFFFF00) == 0x01812600/* NUC1262 */) ||
+		((cpu->partid & 0xFFFFFF00) == 0x01D12600/* NUC1263 */) ||
 		((cpu->partid & 0xFFFFFF00) == 0x00110200/* Nano102 */) ||
 		((cpu->partid & 0xFFFFFF00) == 0x00111200/* Nano112 */) ||
 		((cpu->partid & 0xFFFFFF00) == 0x00A05800/* Mini58  */)) {
@@ -3868,23 +3920,30 @@ static int numicro_probe(struct flash_bank *bank)
 		((cpu->partid & 0xFFFFF000) == 0x01C46000/* M460LD */)) {
 		m_flashInfo = NUMICRO_FLASH_OFFSET_MASK;
 		m_target_name = "M460";
+		m_eChipType = NUC_CHIP_TYPE_M460;
 	}
 	else if (((cpu->partid & 0xFFFFFF00) == 0x01347900/* M479   */) ||
 		((cpu->partid & 0xFFFFF000) == 0x00D48000/* M480   */) ||
 		((cpu->partid & 0xFFFFF000) == 0x01348000/* M480LD */) ||
 		((cpu->partid & 0xFF00FF00) == 0x1D000500/* I94100 */)) {
 		m_target_name = "M480";
+		m_eChipType = NUC_CHIP_TYPE_M480;
 	}
 	else if (((cpu->partid & 0xFFFFFFF0) == 0x01647140) ||
 		((cpu->partid & 0xFFFFFFF0) == 0x01647130) ||
 		((cpu->partid & 0xFFFFFFF0) == 0x01647170)) {
 		m_target_name = "M471";
+		m_eChipType = NUC_CHIP_TYPE_M471;
 	}
 	else if (cpu->partid == 0x00550505) {
 		m_target_name = "NUC505";
+		m_eChipType = NUC_CHIP_TYPE_NUC505;
 	}
 	else if ((cpu->partid & 0xFFFFFF00) == 0x01812600/* NUC1262 */) {
 		m_target_name = "NUC1262";
+	}
+	else if ((cpu->partid & 0xFFFFFF00) == 0x01D12600/* NUC1263 */) {
+		m_target_name = "NUC1263";
 	}
 	else if (((cpu->partid & 0xFFFFFF00) == 0x00235100) ||
 			 ((cpu->partid & 0xFFFFFF00) == 0x00235300)) {
@@ -3894,6 +3953,15 @@ static int numicro_probe(struct flash_bank *bank)
 			 ((cpu->partid & 0xFFFFFF00) == 0x00235400) ||
 			 ((cpu->partid & 0xFFFFFF00) == 0xA1735400)) {
 		m_target_name = "M2354";
+	}
+	else if (((cpu->partid & 0xFFFFFF00) == 0x01129600) ||
+			 ((cpu->partid & 0xFFFFFF00) == 0x01130600) ||
+			 ((cpu->partid & 0xFFFFFF00) == 0x01131600)) {
+		m_target_name = "M030G";
+		m_eChipType = NUC_CHIP_TYPE_M030G;
+		if (nulink_usb_reconnect(m_eChipType) != ERROR_OK) {
+			return ERROR_FAIL;
+		}
 	}
 	else {
 		m_target_name = "common";
@@ -4049,6 +4117,7 @@ COMMAND_HANDLER(numicro_handle_erase_isp_command)
 	return ERROR_OK;
 }
 
+int nulink_usb_M2351_erase(int);
 COMMAND_HANDLER(numicro_handle_chip_erase_command)
 {
 	int retval = ERROR_OK;
@@ -4064,7 +4133,8 @@ COMMAND_HANDLER(numicro_handle_chip_erase_command)
 	if (retval != ERROR_OK)
 		return retval;
 
-	retval = numicro_fmc_cmd(target, ISPCMD_CHIPERASE, 0, 0, &rdat);
+	LOG_DEBUG("m_eChipType %x\n", m_eChipType);
+	retval = nulink_usb_M2351_erase(m_eChipType);
 	if (retval != ERROR_OK) {
 		command_print(CMD_CTX, "numicro chip_erase failed");
 		return retval;
@@ -4097,7 +4167,6 @@ COMMAND_HANDLER(numicro_handle_chip_erase_command)
 	return ERROR_OK;
 }
 
-int nulink_usb_M2351_erase(void);
 COMMAND_HANDLER(numicro_handle_M2351_erase_command)
 {
 	int retval = ERROR_OK;
@@ -4112,7 +4181,7 @@ COMMAND_HANDLER(numicro_handle_M2351_erase_command)
 	if (retval != ERROR_OK)
 		return retval;
 
-	retval = nulink_usb_M2351_erase();
+	retval = nulink_usb_M2351_erase(NUC_CHIP_TYPE_M2351);
 	if (retval != ERROR_OK) {
 		command_print(CMD_CTX, "numicro M2351_erase failed");
 		return retval;
