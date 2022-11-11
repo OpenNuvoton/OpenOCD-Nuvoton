@@ -1638,7 +1638,7 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 		h->interface_num = NULINK2_INTERFACE_NUM;
 //		h->rx_ep = NULINK2_RX_EP;
 //		h->tx_ep = NULINK2_TX_EP;
-		h->max_packet_size = jtag_libusb_get_maxPacketSize(h->fd, 0, h->interface_num, &h->rx_ep, &h->tx_ep);
+		h->max_packet_size = jtag_libusb_get_maxPacketSize(h->fd, 0, h->interface_num, (unsigned int *)&h->rx_ep, (unsigned int *)&h->tx_ep);
 		if (h->max_packet_size == (uint16_t)-1) {
 			h->max_packet_size = NULINK2_HID_MAX_SIZE;
 		}
@@ -1657,7 +1657,7 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 		h->interface_num = NULINK_INTERFACE_NUM;
 //		h->rx_ep = NULINK_RX_EP;
 //		h->tx_ep = NULINK_TX_EP;
-		h->max_packet_size = jtag_libusb_get_maxPacketSize(h->fd, 0, h->interface_num, &h->rx_ep, &h->tx_ep);
+		h->max_packet_size = jtag_libusb_get_maxPacketSize(h->fd, 0, h->interface_num, (unsigned int *)&h->rx_ep, (unsigned int *)&h->tx_ep);
 		if (h->max_packet_size == (uint16_t)-1) {
 			h->max_packet_size = NULINK_HID_MAX_SIZE;
 		}
