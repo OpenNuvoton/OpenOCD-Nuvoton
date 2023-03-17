@@ -1531,11 +1531,11 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 
 	struct stat fileStat;
 	err = stat("NuLink.exe", &fileStat);
-	LOG_DEBUG("Stat Case 0: %d", err);
+	LOG_DEBUG("Stat Case 1: %d", err);
 	if(err >= 0) {
 		sprintf(buf, "NuLink.exe -o conflict");
 		result = system(buf);
-		LOG_DEBUG("Run NuLink.exe (result: %d)", result);
+		LOG_DEBUG("Run NuLink.exe on Win32 (result: %d)", result);
 		if (result == -46) {
 			LOG_DEBUG("A conflict happened! (result: %d)", result);
 			LOG_ERROR("The ICE has been used by another Nuvoton tool. OpenOCD cannot work with the ICE unless we close the connection between the ICE and Nuvoton tool.");
@@ -1555,12 +1555,12 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 		}
 	}
 	else {
-		err = stat("c:\\Program Files\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe", &fileStat);
-		LOG_DEBUG("Stat Case 1: %d", err);
+		err = stat("NuLink.exe", &fileStat);
+		LOG_DEBUG("Stat Case 2: %d", err);
 		if(err >= 0) {
-			sprintf(buf, "\"c:\\Program Files\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe\" -o conflict");
+			sprintf(buf, "NuLink.exe -o conflict");
 			result = system(buf);
-			LOG_DEBUG("Run NuLink.exe on Win32 (result: %d)", result);
+			LOG_DEBUG("Run NuLink.exe on Win64 (result: %d)", result);
 			if (result == -46) {
 				LOG_DEBUG("A conflict happened! (result: %d)", result);
 				LOG_ERROR("The ICE has been used by another Nuvoton tool. OpenOCD cannot work with the ICE unless we close the connection between the ICE and Nuvoton tool.");
@@ -1573,40 +1573,14 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 				return ERROR_FAIL;
 			}
 			else if (result == 0) {
-				sprintf(buf, "start /b \"\" \"c:\\Program Files\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe\" -o wait");
+				sprintf(buf, "start /b \"\" NuLink.exe -o wait");
 				result = system(buf);
 				busy_sleep(500);
 				LOG_DEBUG("Wait NuLink.exe (result: %d)", result);
 			}
 		}
 		else {
-			err = stat("c:\\Program Files (x86)\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe", &fileStat);
-			LOG_DEBUG("Stat Case 2: %d", err);
-			if(err >= 0) {
-				sprintf(buf, "\"c:\\Program Files (x86)\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe\" -o conflict");
-				result = system(buf);
-				LOG_DEBUG("Run NuLink.exe on Win64 (result: %d)", result);
-				if (result == -46) {
-					LOG_DEBUG("A conflict happened! (result: %d)", result);
-					LOG_ERROR("The ICE has been used by another Nuvoton Tool. OpenOCD cannot work with the ICE unless we close the connection between the ICE and Nuvoton tool.");
-					return ERROR_FAIL;
-				}
-				else if (result == -6) {
-					LOG_DEBUG("Cannot find a target chip! (result: %d)", result);
-					LOG_ERROR("We cannot find any Nuvoton device. Please check the hardware connection.");
-					LOG_ERROR("If the ICE is used by another Nuvoton tool, please close the connection between the ICE and Nuvoton tool.");
-					return ERROR_FAIL;
-				}
-				else if (result == 0) {
-					sprintf(buf, "start /b \"\" \"c:\\Program Files (x86)\\Nuvoton Tools\\OpenOCD\\bin\\NuLink.exe\" -o wait");
-					result = system(buf);
-					busy_sleep(500);
-					LOG_DEBUG("Wait NuLink.exe (result: %d)", result);
-				}
-			}
-			else {
-				LOG_DEBUG("Skip running NuLink.exe");
-			}
+			LOG_DEBUG("Skip running NuLink.exe");
 		}
 	}
 	h = calloc(1, sizeof(struct nulink_usb_handle_s));

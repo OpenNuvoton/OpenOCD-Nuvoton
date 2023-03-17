@@ -152,6 +152,7 @@ typedef enum {
 	NUC_CHIP_TYPE_GENERAL_V6M	= 0x0,
 	NUC_CHIP_TYPE_M031			= 0x10A,
 	NUC_CHIP_TYPE_M030G			= 0x10F,
+	NUC_CHIP_TYPE_M0564			= 0x121,
 	NUC_CHIP_TYPE_M2351			= 0x321,
 	NUC_CHIP_TYPE_GENERAL_V7M	= 0x400,
 	NUC_CHIP_TYPE_M471			= 0x40A,
@@ -3755,6 +3756,7 @@ static int numicro_probe(struct flash_bank *bank)
 			((cpu->partid & 0xFFFFFF00) == 0x01131100/* M031I  */) ||
 			((cpu->partid & 0xFFFFFF00) == 0x01132100/* M031I  */)) {
 			m_pageSize = NUMICRO_PAGESIZE * 4;
+			m_eChipType = NUC_CHIP_TYPE_M0564;
 		}
 		else {
 			m_pageSize = NUMICRO_PAGESIZE;
