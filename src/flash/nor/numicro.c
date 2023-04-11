@@ -150,11 +150,12 @@ struct numicro_cpu_type {
 
 typedef enum {
 	NUC_CHIP_TYPE_GENERAL_V6M	= 0x0,
+	NUC_CHIP_TYPE_MINI51		= 0x101,
 	NUC_CHIP_TYPE_M031			= 0x10A,
 	NUC_CHIP_TYPE_M030G			= 0x10F,
 	NUC_CHIP_TYPE_M0564			= 0x121,
 	NUC_CHIP_TYPE_M2351			= 0x321,
-	NUC_CHIP_TYPE_GENERAL_V7M	= 0x400,
+	NUC_CHIP_TYPE_M451			= 0x402,
 	NUC_CHIP_TYPE_M471			= 0x40A,
 	NUC_CHIP_TYPE_M480			= 0x411,
 	NUC_CHIP_TYPE_M460			= 0x49A,
@@ -1006,7 +1007,7 @@ uint32_t m_addressFlashOffset = 0;
 uint32_t m_M23SecureDebugState = NUMICRO_M23_SECURE_DEBUG_NORMAL;
 uint32_t m_flashInfo = 0; /* bit 0:SPROM exists; */
 char *m_target_name = "";
-NUC_CHIP_TYPE_E m_eChipType = NUC_CHIP_TYPE_GENERAL_V7M;
+NUC_CHIP_TYPE_E m_eChipType = NUC_CHIP_TYPE_M451;
 bool m_bSPIMFlashSectorErased = 0;
 
 /* Private methods */
@@ -3737,7 +3738,7 @@ static int numicro_probe(struct flash_bank *bank)
 			m_eChipType = NUC_CHIP_TYPE_M031;
 		}
 		else {
-			m_eChipType = NUC_CHIP_TYPE_GENERAL_V6M;
+			m_eChipType = NUC_CHIP_TYPE_MINI51;
 		}
 
 		if ((cpu->partid == 0x00295C50/* NUC029LGE */) ||
@@ -3774,7 +3775,7 @@ static int numicro_probe(struct flash_bank *bank)
 		}
 	}
 	else { /* armv7m (M4) */
-		m_eChipType = NUC_CHIP_TYPE_GENERAL_V7M;
+		m_eChipType = NUC_CHIP_TYPE_M451;
 		if (((cpu->partid & 0xFFFFFF00) == 0x01347900/* M479   */) ||
 			((cpu->partid & 0xFFFFF000) == 0x00D48000/* M480   */) ||
 			((cpu->partid & 0xFFFFF000) == 0x01348000/* M480LD */) ||
