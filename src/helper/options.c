@@ -28,6 +28,9 @@
 #include "command.h"
 
 #include <getopt.h>
+#if IS_DARWIN
+#include <libproc.h>
+#endif
 
 #ifndef _WIN32
 #define HAVE_REALPATH
