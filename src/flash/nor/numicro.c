@@ -2066,7 +2066,7 @@ static int numicro_writeblock(struct flash_bank *bank, const uint8_t *buffer,
 				}
 
 				retval = target_write_buffer(target, write_algorithm->address,
-					sizeof(numicro_M2354_flash_algorithm_code), numicro_M2354_flash_algorithm_code);
+					sizeof(numicro_M2354_flash_algorithm_code), (const uint8_t *)numicro_M2354_flash_algorithm_code);
 				if (retval != ERROR_OK)
 					return retval;
 			
@@ -3978,7 +3978,7 @@ static int numicro_probe(struct flash_bank *bank)
 		if (((cpu->partid & 0xFFFFFF00) == 0x01347900/* M479   */) ||
 			((cpu->partid & 0xFFFFF000) == 0x00D48000/* M480   */) ||
 			((cpu->partid & 0xFFFFF000) == 0x01348000/* M480LD */) ||
-			((cpu->partid & 0xFFFFF000) == 0x01343300/* M433   */) ||
+			((cpu->partid & 0xFFFFFF00) == 0x01343300/* M433   */) ||
 			((cpu->partid & 0xFFFFF000) == 0x01B46000/* M460HD */) ||
 			((cpu->partid & 0xFFFFF000) == 0x01C46000/* M460LD */) ||
 			((cpu->partid & 0xFF00FF00) == 0x1D000500/* I94100 */)) {
@@ -4032,7 +4032,7 @@ static int numicro_probe(struct flash_bank *bank)
 	else if (((cpu->partid & 0xFFFFFF00) == 0x01347900/* M479   */) ||
 		((cpu->partid & 0xFFFFF000) == 0x00D48000/* M480   */) ||
 		((cpu->partid & 0xFFFFF000) == 0x01348000/* M480LD */) ||
-		((cpu->partid & 0xFFFFF000) == 0x01343300/* M433   */) ||
+		((cpu->partid & 0xFFFFFF00) == 0x01343300/* M433   */) ||
 		((cpu->partid & 0xFF00FF00) == 0x1D000500/* I94100 */)) {
 		m_target_name = "M480";
 		m_eChipType = NUC_CHIP_TYPE_M480;
