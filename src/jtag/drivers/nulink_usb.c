@@ -50,7 +50,7 @@
 #define NULINK2_TX_EP (7|ENDPOINT_OUT)
 
 #define NULINK_HID_MAX_SIZE    (64)
-#define NULINK2_HID_MAX_SIZE   (1024)
+#define NULINK2_HID_MAX_SIZE   (512)
 #define V6M_MAX_COMMAND_LENGTH (NULINK_HID_MAX_SIZE - 2)
 #define V7M_MAX_COMMAND_LENGTH (NULINK2_HID_MAX_SIZE - 3)
 
@@ -64,8 +64,8 @@ struct nulink_usb_handle_s {
 	uint8_t tx_ep;
 	uint16_t max_packet_size;
 	uint32_t usbcmdidx;
-	uint8_t cmdidx;
-	uint8_t cmdsize;
+	uint16_t cmdidx;
+	uint16_t cmdsize;
 	uint8_t cmdbuf[NULINK2_HID_MAX_SIZE];
 	uint8_t tempbuf[NULINK2_HID_MAX_SIZE];
 	uint8_t databuf[NULINK2_HID_MAX_SIZE];
@@ -86,6 +86,7 @@ struct nulink_usb_internal_api_s {
 //ICE Command
 #define CMD_WRITE_REG				0xB8UL
 #define CMD_WRITE_RAM				0xB9UL
+#define CMD_WRITE_BLOCK				0xBCUL
 #define CMD_CHECK_ID				0xA3UL
 #define CMD_MCU_RESET				0xE2UL
 #define CMD_CHECK_MCU_STOP			0xD8UL
@@ -197,7 +198,7 @@ static int nulink_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 	} while ((h->cmdbuf[0] != (buf[0] & 0x7F)) ||
 			(cmdsize != buf[1]) ||
 			(cmdID != 0xff && cmdID != CMD_WRITE_REG && cmdID != CMD_WRITE_RAM &&
-			 cmdID != CMD_CHECK_MCU_STOP  && cmdID != buf[2]));
+			 cmdID != CMD_CHECK_MCU_STOP && cmdID != CMD_WRITE_BLOCK && cmdID != buf[2]));
 #if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 	jtag_libusb_nuvoton_mutex_unlock();
 #endif
@@ -212,16 +213,30 @@ static int nulink2_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 #if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 	jtag_libusb_nuvoton_mutex_lock();
 #endif
-	jtag_libusb_interrupt_write(h->fd, h->tx_ep, (char *)h->cmdbuf, h->max_packet_size,
-		NULINK_WRITE_TIMEOUT);
+	if (h->max_packet_size > NULINK_HID_MAX_SIZE) {
+		jtag_libusb_bulk_write(h->fd, h->tx_ep, (char *)h->cmdbuf, h->max_packet_size,
+			NULINK_WRITE_TIMEOUT);
+	}
+	else {
+		jtag_libusb_interrupt_write(h->fd, h->tx_ep, (char *)h->cmdbuf, h->max_packet_size,
+			NULINK_WRITE_TIMEOUT);
+	}
+
 	if (debug_level >= LOG_LVL_NULINK)
 	{
 		char bufName[20] = "cmd transferred";
 		print64BytesBufferContent(bufName, h->cmdbuf, h->max_packet_size);
 	}
 	do {
-		jtag_libusb_interrupt_read(h->fd, h->rx_ep, (char *)buf,
-			h->max_packet_size, NULINK_READ_TIMEOUT);
+		if (h->max_packet_size > NULINK_HID_MAX_SIZE) {
+			jtag_libusb_bulk_read(h->fd, h->rx_ep, (char *)buf,
+				h->max_packet_size, NULINK_READ_TIMEOUT);
+		}
+		else {
+			jtag_libusb_interrupt_read(h->fd, h->rx_ep, (char *)buf,
+				h->max_packet_size, NULINK_READ_TIMEOUT);
+		}
+
 		if (debug_level >= LOG_LVL_NULINK)
 		{
 			char bufName1[20] = "data received";
@@ -236,7 +251,7 @@ static int nulink2_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 	} while ((h->cmdbuf[0] != (buf[0] & 0x7F)) ||
 			(cmdsize != (((int)buf[1]) << 8) + ((int)buf[2] & 0xFF)) ||
 			(cmdID != 0xff && cmdID != CMD_WRITE_REG && cmdID != CMD_WRITE_RAM &&
-			 cmdID != CMD_CHECK_MCU_STOP && cmdID != buf[3]));
+			cmdID != CMD_CHECK_MCU_STOP && cmdID != CMD_WRITE_BLOCK && cmdID != buf[3]));
 #if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 	jtag_libusb_nuvoton_mutex_unlock();
 #endif
@@ -309,11 +324,11 @@ static int nulink_usb_version(void *handle)
 
 	assert(handle != NULL);
 
-	m_nulink_usb_api.nulink_usb_init_buffer(handle, V6M_MAX_COMMAND_LENGTH);
+	m_nulink_usb_api.nulink_usb_init_buffer(handle, h->max_packet_size);
 
-	memset(h->cmdbuf + h->cmdidx, 0xFF, V6M_MAX_COMMAND_LENGTH);
-	h->cmdbuf[h->cmdidx + 4] = (char)0xA1; /* host_rev_num: 6561 */;
-	h->cmdbuf[h->cmdidx + 5] = (char)0x19;
+	memset(h->cmdbuf + h->cmdidx, 0xFF, h->max_packet_size);
+	h->cmdbuf[h->cmdidx + 4] = (char)0x89;//0xA1; /* host_rev_num: 6561 */;
+	h->cmdbuf[h->cmdidx + 5] = (char)0x1D;//0x19;
 
 	res = m_nulink_usb_api.nulink_usb_xfer(handle, h->databuf, h->cmdsize);
 
@@ -1247,6 +1262,64 @@ static int nulink_usb_write_mem32(void *handle, uint32_t addr, uint16_t len,
 	return res;
 }
 
+static int nulink_usb_write_block(void *handle, uint32_t addr, uint16_t len,
+	const uint8_t *buffer)
+{
+	int res = ERROR_OK;
+	unsigned i, j, count;
+	uint32_t u32bufferData;
+	struct nulink_usb_handle_s *h = handle;
+	uint32_t bytes_remaining = h->max_packet_size - 16;
+	char bufName[20] = "cmd transferred";
+
+	uint8_t packet_buf[512];
+	uint32_t write_block_tmp[512 / 4];
+	uint32_t MaxDataLen = bytes_remaining + 8;
+	uint32_t WriteFileDataLen = MaxDataLen * 20 - 12;		//20 writefile and 1 readfile
+	uint8_t ucCmdIndex = 0;
+	uint32_t tempLen, FirstDataLen;
+
+	assert(handle != NULL);
+
+	/* data must be a multiple of 4 and word aligned */
+	if (len % 4 || addr % 4) {
+		LOG_ERROR("Invalid data alignment");
+		return ERROR_TARGET_UNALIGNED_ACCESS;
+	}
+
+	while (len) {
+		if (len < bytes_remaining)
+			bytes_remaining = len;
+		m_nulink_usb_api.nulink_usb_init_buffer(handle, 12 + bytes_remaining);
+		/* set command ID */
+		h_u32_to_le(h->cmdbuf + h->cmdidx, CMD_WRITE_BLOCK);
+		h->cmdidx += 4;
+		/* addr */
+		h_u32_to_le(h->cmdbuf + h->cmdidx, addr);
+		h->cmdidx += 4;
+		/* len */
+		h_u32_to_le(h->cmdbuf + h->cmdidx, bytes_remaining);
+		h->cmdidx += 4;
+		/* buffer */
+		for (i = 0; i < bytes_remaining; i+=4) {
+			u32bufferData = buf_get_u32(buffer + i, 0, 32);
+			h_u32_to_le(h->cmdbuf + h->cmdidx, u32bufferData);
+			h->cmdidx += 4;
+		}
+
+		res = m_nulink_usb_api.nulink_usb_xfer(handle, h->databuf, 4 * 1);
+
+		addr += bytes_remaining;
+		buffer += bytes_remaining;
+		if (len >= bytes_remaining)
+			len -= bytes_remaining;
+		else
+			len = 0;
+	}
+
+	return res;
+}
+
 static uint32_t nulink_max_block_size(uint32_t tar_autoincr_block, uint32_t address)
 {
 	uint32_t max_tar_block = (tar_autoincr_block - ((tar_autoincr_block - 1) & address));
@@ -1361,53 +1434,61 @@ static int nulink_usb_write_mem(void *handle, uint32_t addr, uint32_t size,
 	/* calculate byte count */
 	count *= size;
 
-	while (count) {
-		bytes_remaining = nulink_max_block_size(h->max_mem_packet, addr);
-
-		if (count < bytes_remaining)
-			bytes_remaining = count;
-
-		if (bytes_remaining >= 4)
-			size = 4;
-
-		/* the nulink only supports 8/32bit memory read/writes
-		 * honour 32bit, all others will be handled as 8bit access */
-		if (size == 4) {
-
-			/* When in jtag mode the nulink uses the auto-increment functinality.
-			 * However it expects us to pass the data correctly, this includes
-			 * alignment and any page boundaries. We already do this as part of the
-			 * adi_v5 implementation, but the nulink is a hla adapter and so this
-			 * needs implementiong manually.
-			 * currently this only affects jtag mode, do single
-			 * access in SWD mode - but this may change and so we do it for both modes */
-
-			/* we first need to check for any unaligned bytes */
-			if (addr % 4) {
-				uint32_t head_bytes = 4 - (addr % 4);
-				retval = nulink_usb_write_mem8(handle, addr, head_bytes, buffer);
-				if (retval != ERROR_OK)
-					return retval;
-				buffer += head_bytes;
-				addr += head_bytes;
-				count -= head_bytes;
-				bytes_remaining -= head_bytes;
-			}
-
-			if (bytes_remaining % 4)
-				retval = nulink_usb_write_mem(handle, addr, 1, bytes_remaining, buffer);
-			else
-				retval = nulink_usb_write_mem32(handle, addr, bytes_remaining, buffer);
-
-		} else
-			retval = nulink_usb_write_mem8(handle, addr, bytes_remaining, buffer);
-
-		if (retval != ERROR_OK)
+	if (count > h->max_mem_packet) {
+		retval = nulink_usb_write_block(handle, addr, count, buffer);
+		if (retval != ERROR_OK) {
 			return retval;
+		}
+	}
+	else {
+		while (count) {
+			bytes_remaining = nulink_max_block_size(h->max_mem_packet, addr);
 
-		buffer += bytes_remaining;
-		addr += bytes_remaining;
-		count -= bytes_remaining;
+			if (count < bytes_remaining)
+				bytes_remaining = count;
+
+			if (bytes_remaining >= 4)
+				size = 4;
+
+			/* the nulink only supports 8/32bit memory read/writes
+			* honour 32bit, all others will be handled as 8bit access */
+			if (size == 4) {
+
+				/* When in jtag mode the nulink uses the auto-increment functinality.
+				* However it expects us to pass the data correctly, this includes
+				* alignment and any page boundaries. We already do this as part of the
+				* adi_v5 implementation, but the nulink is a hla adapter and so this
+				* needs implementiong manually.
+				* currently this only affects jtag mode, do single
+				* access in SWD mode - but this may change and so we do it for both modes */
+
+				/* we first need to check for any unaligned bytes */
+				if (addr % 4) {
+					uint32_t head_bytes = 4 - (addr % 4);
+					retval = nulink_usb_write_mem8(handle, addr, head_bytes, buffer);
+					if (retval != ERROR_OK)
+						return retval;
+					buffer += head_bytes;
+					addr += head_bytes;
+					count -= head_bytes;
+					bytes_remaining -= head_bytes;
+				}
+
+				if (bytes_remaining % 4)
+					retval = nulink_usb_write_mem(handle, addr, 1, bytes_remaining, buffer);
+				else
+					retval = nulink_usb_write_mem32(handle, addr, bytes_remaining, buffer);
+
+			} else
+				retval = nulink_usb_write_mem8(handle, addr, bytes_remaining, buffer);
+
+			if (retval != ERROR_OK)
+				return retval;
+
+			buffer += bytes_remaining;
+			addr += bytes_remaining;
+			count -= bytes_remaining;
+		}
 	}
 
 	return retval;
@@ -1529,60 +1610,6 @@ static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 
 	m_nulink_usb_handle = NULL;
 
-	struct stat fileStat;
-	err = stat("NuLink.exe", &fileStat);
-	LOG_DEBUG("Stat Case 1: %d", err);
-	if(err >= 0) {
-		sprintf(buf, "NuLink.exe -o conflict");
-		result = system(buf);
-		LOG_DEBUG("Run NuLink.exe on Win32 (result: %d)", result);
-		if (result == -46) {
-			LOG_DEBUG("A conflict happened! (result: %d)", result);
-			LOG_ERROR("The ICE has been used by another Nuvoton tool. OpenOCD cannot work with the ICE unless we close the connection between the ICE and Nuvoton tool.");
-			return ERROR_FAIL;
-		}
-		else if (result == -6) {
-			LOG_DEBUG("Cannot find a target chip! (result: %d)", result);
-			LOG_ERROR("We cannot find any Nuvoton device. Please check the hardware connection.");
-			LOG_ERROR("If the ICE is used by another Nuvoton tool, please close the connection between the ICE and Nuvoton tool.");
-			return ERROR_FAIL;
-		}
-		else if (result == 0) {
-			sprintf(buf, "start /b \"\" NuLink.exe -o wait");
-			result = system(buf);
-			busy_sleep(500);
-			LOG_DEBUG("Wait NuLink.exe (result: %d)", result);
-		}
-	}
-	else {
-		err = stat("NuLink.exe", &fileStat);
-		LOG_DEBUG("Stat Case 2: %d", err);
-		if(err >= 0) {
-			sprintf(buf, "NuLink.exe -o conflict");
-			result = system(buf);
-			LOG_DEBUG("Run NuLink.exe on Win64 (result: %d)", result);
-			if (result == -46) {
-				LOG_DEBUG("A conflict happened! (result: %d)", result);
-				LOG_ERROR("The ICE has been used by another Nuvoton tool. OpenOCD cannot work with the ICE unless we close the connection between the ICE and Nuvoton tool.");
-				return ERROR_FAIL;
-			}
-			else if (result == -6) {
-				LOG_DEBUG("Cannot find a target chip! (result: %d)", result);
-				LOG_ERROR("We cannot find any Nuvoton device. Please check the hardware connection.");
-				LOG_ERROR("If the ICE is used by another Nuvoton tool, please close the connection between the ICE and Nuvoton tool.");
-				return ERROR_FAIL;
-			}
-			else if (result == 0) {
-				sprintf(buf, "start /b \"\" NuLink.exe -o wait");
-				result = system(buf);
-				busy_sleep(500);
-				LOG_DEBUG("Wait NuLink.exe (result: %d)", result);
-			}
-		}
-		else {
-			LOG_DEBUG("Skip running NuLink.exe");
-		}
-	}
 	h = calloc(1, sizeof(struct nulink_usb_handle_s));
 
 	if (h == 0) {
