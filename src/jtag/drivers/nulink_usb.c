@@ -1266,18 +1266,10 @@ static int nulink_usb_write_block(void *handle, uint32_t addr, uint16_t len,
 	const uint8_t *buffer)
 {
 	int res = ERROR_OK;
-	unsigned i, j, count;
+	unsigned i;
 	uint32_t u32bufferData;
 	struct nulink_usb_handle_s *h = handle;
 	uint32_t bytes_remaining = h->max_packet_size - 16;
-	char bufName[20] = "cmd transferred";
-
-	uint8_t packet_buf[512];
-	uint32_t write_block_tmp[512 / 4];
-	uint32_t MaxDataLen = bytes_remaining + 8;
-	uint32_t WriteFileDataLen = MaxDataLen * 20 - 12;		//20 writefile and 1 readfile
-	uint8_t ucCmdIndex = 0;
-	uint32_t tempLen, FirstDataLen;
 
 	assert(handle != NULL);
 
@@ -1602,11 +1594,10 @@ static int nulink_usb_close(void *handle)
 
 static int nulink_usb_open(struct hl_interface_param_s *param, void **fd)
 {
-	int err, result = 0;
+	int err = 0;
 	struct nulink_usb_handle_s *h;
 
 	LOG_DEBUG("nulink_usb_open");
-	char buf[512];
 
 	m_nulink_usb_handle = NULL;
 
