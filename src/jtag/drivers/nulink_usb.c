@@ -591,7 +591,7 @@ int nulink_usb_reconnect(int chip_type)
 		h_u32_to_le(h->cmdbuf + h->cmdidx, 3300);
 		h->cmdidx += 4;
 		/* If supply voltage to target or not */
-		h_u32_to_le(h->cmdbuf + h->cmdidx, 0);
+		h_u32_to_le(h->cmdbuf + h->cmdidx, 1);
 		h->cmdidx += 4;
 		/* USB_FUNC_E: USB_FUNC_HID_BULK */
 		h_u32_to_le(h->cmdbuf + h->cmdidx, 2);
@@ -643,7 +643,7 @@ int nulink_usb_M2351_erase(int chip_type)
 		h_u32_to_le(h->cmdbuf + h->cmdidx, 3300);
 		h->cmdidx += 4;
 		/* If supply voltage to target or not */
-		h_u32_to_le(h->cmdbuf + h->cmdidx, 0);
+		h_u32_to_le(h->cmdbuf + h->cmdidx, 1);
 		h->cmdidx += 4;
 		/* USB_FUNC_E: USB_FUNC_HID_BULK */
 		h_u32_to_le(h->cmdbuf + h->cmdidx, 2);
@@ -1535,7 +1535,7 @@ static int nulink_speed(void *handle, int khz, bool query)
 		h_u32_to_le(h->cmdbuf + h->cmdidx, h->io_voltage);
 		h->cmdidx += 4;
 		/* If supply voltage to target or not */
-		h_u32_to_le(h->cmdbuf + h->cmdidx, 0);
+		h_u32_to_le(h->cmdbuf + h->cmdidx, 1);
 		h->cmdidx += 4;
 		/* USB_FUNC_E: USB_FUNC_HID_BULK */
 		h_u32_to_le(h->cmdbuf + h->cmdidx, 2);
