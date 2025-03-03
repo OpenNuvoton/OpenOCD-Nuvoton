@@ -335,6 +335,7 @@ static const struct numicro_cpu_type NuMicroParts[] = {
 	/* M0564 */
 	{"M0564LE4AE", 0x00C56405, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 0x800, 8)},
 	{"M0564LG4AE", 0x00C56404, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 0x800, 8)},
+	{"M0564SSAE", 0x00C56415, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 0x800, 8)},
 	{"M0564SE4AE", 0x00C56413, NUMICRO_BANKS_GENERAL(128*1024, 0*1024, 4*1024, 0x800, 8)},
 	{"M0564SG4AE", 0x00C56412, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 0x800, 8)},
 	{"M0564VG4AE", 0x00C56431, NUMICRO_BANKS_GENERAL(256*1024, 0*1024, 4*1024, 0x800, 8)},
@@ -1876,10 +1877,6 @@ static int numicro_init_isp(struct target *target)
 		if (retval != ERROR_OK)
 			return retval;
 
-		/* Write one to undocumented flash control register */
-	//	retval = target_write_u32(target, NUMICRO_FLASH_CHEAT - m_addressMinusOffset, 1);
-	//	if (retval != ERROR_OK)
-	//		return retval;
 
 		if (armv7m == NULL) {
 			/* something is very wrong if armv7m is NULL */
@@ -1887,9 +1884,11 @@ static int numicro_init_isp(struct target *target)
 			return retval;
 		}
 		if (armv7m->arm.is_armv6m) {
-			retval = target_write_u32(target, NUMICRO_FLASH_CHEAT - m_addressMinusOffset, 1);
-			if (retval != ERROR_OK)
-				return retval;
+			if (((m_flashInfo & NUMICRO_SPROM_MASK) == 0) && ((m_flashInfo & NUMICRO_SPROM_MINI57_MASK) == 0)) {
+				retval = target_write_u32(target, NUMICRO_FLASH_CHEAT - m_addressMinusOffset, 1);
+				if (retval != ERROR_OK)
+					return retval;
+			}
 		}
 	}
 
@@ -4250,27 +4249,20 @@ COMMAND_HANDLER(numicro_handle_chip_erase_command)
 		return retval;
 	}
 
-	if ((m_flashInfo & NUMICRO_SPROM_MASK) != 0) {
-		LOG_DEBUG("SPROM is erasing");
-		retval = numicro_fmc_cmd(target, ISPCMD_ERASE, NUMICRO_SPROM_BASE, NUMICRO_SPROM_ISPDAT, &rdat);
-		if (retval != ERROR_OK)
-			return retval;
-	}
-	else if ((m_flashInfo & NUMICRO_SPROM_MINI57_MASK) != 0) {
-		LOG_DEBUG("SPROM is erasing");
-		retval = numicro_fmc_cmd(target, ISPCMD_ERASE, NUMICRO_SPROM_BASE, NUMICRO_SPROM_ISPDAT, &rdat);
-		if (retval != ERROR_OK)
-			return retval;
-		retval = numicro_fmc_cmd(target, ISPCMD_ERASE, NUMICRO_SPROM_BASE2, NUMICRO_SPROM_ISPDAT, &rdat);
-		if (retval != ERROR_OK)
-			return retval;
-		retval = numicro_fmc_cmd(target, ISPCMD_ERASE, NUMICRO_SPROM_BASE3, NUMICRO_SPROM_ISPDAT, &rdat);
-		if (retval != ERROR_OK)
-			return retval;
-	}
-	else {
-		LOG_DEBUG("SPROM do not exist");
-	}
+	retval = numicro_init_isp(target);
+	if (retval != ERROR_OK)
+		return retval;
+
+	LOG_DEBUG("SPROM is erasing");
+	retval = numicro_fmc_cmd(target, ISPCMD_ERASE, NUMICRO_SPROM_BASE, NUMICRO_SPROM_ISPDAT, &rdat);
+	if (retval != ERROR_OK)
+		return retval;
+	retval = numicro_fmc_cmd(target, ISPCMD_ERASE, NUMICRO_SPROM_BASE2, NUMICRO_SPROM_ISPDAT, &rdat);
+	if (retval != ERROR_OK)
+		return retval;
+	retval = numicro_fmc_cmd(target, ISPCMD_ERASE, NUMICRO_SPROM_BASE3, NUMICRO_SPROM_ISPDAT, &rdat);
+	if (retval != ERROR_OK)
+		return retval;
 
 	command_print(CMD_CTX, "numicro chip_erase complete");
 
