@@ -169,7 +169,8 @@ static void nulink_usb_init_buffer(void *handle, uint32_t size);
 static int nulink_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 {
 	struct nulink_usb_handle_s *h = handle;
-	int res = ERROR_OK, startTime = GetTickCount(), cmdID;
+	int res = ERROR_OK, cmdID;
+	double startTime = GetTickCount();
 	assert(handle != NULL);
 #if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 	jtag_libusb_nuvoton_mutex_lock();
@@ -208,7 +209,8 @@ static int nulink_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 static int nulink2_usb_xfer_rw(void *handle, int cmdsize, uint8_t *buf)
 {
 	struct nulink_usb_handle_s *h = handle;
-	int res = ERROR_OK, startTime = GetTickCount(), cmdID;
+	int res = ERROR_OK, cmdID;
+	double startTime = GetTickCount();
 	assert(handle != NULL);
 #if defined(_WIN32) && (NUVOTON_CUSTOMIZED)
 	jtag_libusb_nuvoton_mutex_lock();
